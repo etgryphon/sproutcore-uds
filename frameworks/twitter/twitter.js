@@ -1,9 +1,9 @@
 // ==========================================================================
-// Project:   Twitapp
+// Project:   SCUDS
 // Copyright: ©2009 (MRD)
 // Author: Josh Holt
 // ==========================================================================
-/*globals unescape Twitapp */
+/*globals unescape SCUDS */
 
 
 /**
@@ -17,7 +17,7 @@
   An example query:
   {{{
     sc_require('models/tweet');
-    YourApp.TWEETS_QUERY = SC.Query.local(Twitapp.Tweet, { orderBy: 'id DESC', url: 'search.json?rpp=10&q=twitter' });
+    YourApp.TWEETS_QUERY = SC.Query.local(SCUDS.Tweet, { orderBy: 'id DESC', url: 'search.json?rpp=10&q=twitter' });
   }}}
   
   You would place the query and requires at the top of this file, main.js, or
@@ -31,8 +31,8 @@
 
   @extends SC.DataSource
 */
-Twitapp.TwitterDataSource = SC.DataSource.extend(
-/** @scope Twitapp.TwitterDataSource.prototype */ {
+SCUDS.TwitterDataSource = SC.DataSource.extend(
+/** @scope SCUDS.TwitterDataSource.prototype */ {
 
   // ..........................................................
   // QUERY SUPPORT
@@ -58,7 +58,7 @@ Twitapp.TwitterDataSource = SC.DataSource.extend(
           recs[i].searchTerm = unescape(response.get('body').query);
           recs[i].text = recs[i].text.unescapeHTML();
         }
-        store.loadRecords(Twitapp.Tweet, recs);
+        store.loadRecords(SCUDS.Tweet, recs);
         store.dataSourceDidFetchQuery(query);
       } else {
         store.dataSourceDidErrorQuery(query, response);
@@ -79,7 +79,7 @@ Twitapp.TwitterDataSource = SC.DataSource.extend(
   },
   
   createRecord: function(store, storeKey) {
-    var newId = store.find(Twitapp.Search).length();
+    var newId = store.find(SCUDS.TwitterSearch).length();
     var datahash = store.readEditableDataHash(storeKey);
     datahash.guid = newId + 1;
     store.dataSourceDidComplete(storeKey,null,newId + 1);

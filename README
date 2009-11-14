@@ -5,7 +5,7 @@ This is a basic library for some great public APIs
 CONTRIBUTORS:
   Main Architect: Evin Grano
   Contributors:
-    - Devin Torres
+    - Josh Holt
 
 CURRENT FRAMEWORKS:
   - Foundation:
@@ -19,4 +19,4 @@ CURRENT FRAMEWORKS:
       
 === License ===
 
-Sproutcore-Universal Data Source (SCUDS) Library:
+Sproutcore-Universal Data Source (SCUDS) Library is under the MIT License
