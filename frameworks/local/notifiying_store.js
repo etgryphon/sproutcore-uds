@@ -1,51 +1,53 @@
-
 /**
-
- NotifyingStore will notify the dataSource (usually SCUDS.NotifyingCascadeDataSource)
- of any changes that should be bubbled through all dataSources.
-
- @Author: GD
+ * NotifyingStore will notify the data source (usually SCUDS.NotifyingCascadeDataSource)
+ * of any changes that should be bubbled through all dataSources.
+ *
+ * @author Geoffrey Donaldson
  */
 SCUDS.NotifyingStore = SC.Store.extend({
 
   /**
-   Holds a hash of timestamps for the lastRetrievedAt time for each record Type
+   * A hash of timestamps for the lastRetrievedAt time for each record type.
    */
   lastRetrievedAt: {},
 
   /**
-    Overrides loadRecord() in SC.Store to notifiy cascadingDataSource of record changes
-
-  */
+   * Overrides loadRecord() in SC.Store to notifiy cascadingDataSource of record changes.
+   */
   loadRecord: function(recordType, dataHash, id) {
-    var dataSource = this._getDataSource() ;
+    var dataSource = this._getDataSource();
 
     if (dataHash.status === "deleted") {
-      // TODO: is this the best way to do this?
-      this.pushDestroy(recordType, id) ;
-      dataSource.notifyDidDestroyRecord(this, recordType, dataHash, id) ;
-      return ;
+      // TODO: Is this the best way to do this?
+      SC.RunLoop.begin();
+      this.pushDestroy(recordType, id);
+      SC.RunLoop.end();
+
+      dataSource.notifyDidDestroyRecord(this, recordType, dataHash, id);
+      return;
     }
 
-    var ret = sc_super() ;
-    // console.log('Store.loadRecord - %@'.fmt(id));
-    
-    if (dataSource.wantsNotification) dataSource.notifyDidLoadRecord(this, recordType, dataHash, id) ;
-    
-    return ret ;
+    var ret = sc_super();
+
+    if (dataSource.wantsNotification) {
+      dataSource.notifyDidLoadRecord(this, recordType, dataHash, id);
+    }
+
+    return ret;
   },
   
   createRecord: function(recordType, dataHash, id) {
-    var ret = sc_super(),
-        dataSource = this._getDataSource() ;
-    console.log('Store.createRecord');
+    var ret = sc_super();
+    var dataSource = this._getDataSource();
+
     if (dataSource.wantsNotification) {
-      var primaryKey = recordType.prototype.primaryKey,
-          storeKey = ret.get('storeKey') ;
-      id = ret.get(primaryKey) ;
-      dataHash = this.readDataHash(storeKey) ;
-      dataSource.notifyDidCreateRecord(this, recordType, dataHash, id) ;
+      var primaryKey = recordType.prototype.primaryKey;
+      var storeKey = ret.get('storeKey');
+      id = ret.get(primaryKey);
+      dataHash = this.readDataHash(storeKey);
+      dataSource.notifyDidCreateRecord(this, recordType, dataHash, id);
     }
-    return ret ;
+
+    return ret;
   }
-}) ;
+});
