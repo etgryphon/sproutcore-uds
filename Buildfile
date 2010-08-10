@@ -19,6 +19,7 @@ config :foundation, :required => []
 config :amazon, :required => [:foundation]
 config :digg, :required => [:foundation]
 config :twitter, :required => [:foundation]
+config :local, :required => [:foundation]
 
 # SPECIAL THEMES
 # These do not require any of the built-in SproutCore frameworks
