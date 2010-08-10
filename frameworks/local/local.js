@@ -1,11 +1,13 @@
 /*globals Lawnchair google SCUDS*/
 sc_require('lib/Lawnchair');
+
 /**
  * An extension of the SC.DataSource class that acts as a proxy between the SC datastore and the
  * web browser's local storage mechanism.
  *
  * @extends SC.DataSource
  * @author Geoffrey Donaldson
+ * @author Sean Eidemiller
  *
  * @version 0.1
  * @since 0.1
@@ -13,259 +15,300 @@ sc_require('lib/Lawnchair');
 SCUDS.LocalDataSource = SC.DataSource.extend({
 
   wantsNotification: YES,
+  recordRetrievalTimes: NO,
+  isTesting: NO,
   
+  /*
+   * The browser-implemented storage method (default is webkit).
+   */
   _storageMethod: 'webkit',
+
+  /**
+   * Returns the best available browser-implemented storage method.
+   *
+   * Order of preference: webkit (default) -> gears -> dom
+   */
   storageMethod: function() {
-    if (this.supports_gears_storage()) {
+    if (this._supportsGearsStorage()) {
       return 'gears';
-    } else if (this.supports_local_storage()) {
+    } else if (this._supportsLocalStorage()) {
       return 'dom';
     }
   }.property().cacheable(),
   
-  isTesting: NO,
-  
   /**
-    A set of compressed record type strings.
-    for example: App.Person would become "AppPerson"
-    SC.Set.create(["AppPerson"])
-    
-    SC.Set
+   * A set of compressed record type strings.
+   *
+   * For example: App.Person would become "AppPerson"
+   * SC.Set.create(["AppPerson"])
+   * 
+   * @returns {SC.Set}
    */
   supportedRecordTypes: null,
-  
+ 
+  /*
+   * A list of cached datastores (mostly keyed by record type).
+   */
   _dataStoreWithAdapter: {},
-  _getDataStore:function(recordType, version) {
+
+  /*
+   * Returns a datastore for a particular record type and API version.
+   */
+  _getDataStore: function(recordType, version) {
     recordType = this._recordTypeToString(recordType);
-    var ds = this._dataStoreWithAdapter[recordType],
-        storageMethod = this.get('storageMethod');
-    if (ds) return ds;
-    
-    console.log('Getting DB with name %@'.fmt(recordType));
-    
+    var storageMethod = this.get('storageMethod');
+    var ds = this._dataStoreWithAdapter[recordType];
+
+    if (ds) {
+      // Found cached datastore; return.
+      return ds;
+    }
+
+    console.log('Creating new cached datastore [%@:%@]'.fmt(storageMethod, recordType));
     ds = new Lawnchair({
-      table:recordType, 
-      adaptor:storageMethod,
+      table: recordType, 
+      adaptor: storageMethod,
       onError: function(tx, e, msg) {
-        console.log("Error!: "+msg);
-        console.log(e);
+        console.error("Lawnchair error: " + msg);
+        console.error(e);
       }
     });
     
-    // TODO: test to see if schema version is correct.
-    // If not, nuke it.
-    
+    // TODO: [GD/SE] Test to see if schema version is correct; if not, nuke it.
+ 
     this._dataStoreWithAdapter[recordType] = ds;
     return ds;
   },
 
   /**
-   Holds a hash of timestamps for the lastRetrievedAt time for each record Type
+   * A hash of timestamps for the lastRetrievedAt time for each record type.
    */
   lastRetrievedAt: {},
 
   lastRetrievedAtDidChange: function(store, dontSave) {
-    var lastRetrievedAt = this.get('lastRetrievedAt'),
-        source = this._getDataStore('lastRetrievedAt');
+    var lastRetrievedAt = this.get('lastRetrievedAt');
+    var source = this._getDataStore('lastRetrievedAt');
 
     store.set('lastRetrievedAt', lastRetrievedAt);
 
     if (dontSave) return;
+
     // Save lastRetrievedAt times to localStorage.
-//    source.save({
-//      key: 'lastRetrievedAt',
-//      record: lastRetrievedAt
-//    }, function() {
-//      // console.log('Saved times');
-//    }) ;
+    /*
+    source.save({
+      key: 'lastRetrievedAt',
+      record: lastRetrievedAt
+    }, function(){});
+    */
   },
 
+  /**
+   * Called on behalf of store.find(query)
+   */
   fetch: function(store, query) {
-    console.log("LocalDataSource.fetch");
-    var recordType = query.get('recordType'),
-        self = this, source;
-    
-    if(!this._isSupportedRecordType(recordType)) return NO;
-    
-    source = this._getDataStore(recordType);
-    
-    source.all(function(records) {
-      self._didFetch(store, source, query, records, recordType);
+    var recordType = query.get('recordType');
+    if (!this._isSupportedRecordType(recordType)) return NO;
+
+    console.log('Retrieving %@ records from local cache...'.fmt(recordType.toString()));
+
+    var ds;
+    var self = this;
+ 
+    ds = this._getDataStore(recordType);
+    ds.all(function(records) {
+      self._didFetch(store, ds, query, records, recordType);
     });
-    
-    return SC.MIXED_STATE; // do not stop here.
+
+    // Don't stop here in the cascade chain.
+    return SC.MIXED_STATE;
   },
-  
+ 
   _didFetch: function(store, source, query, records, recordType) {
     var id, data;
-    console.log("Found %@ saved records".fmt(records.length));
+    console.log('Found %@ cached %@ records.'.fmt(records.length, recordType.toString()));
+    SC.RunLoop.begin();
     records.forEach(function(dataHash) {
       data = dataHash.record;
       if (data) {
         id = data.id;
-        // We can safely push this data AS IS, as the store will ensure that 
-        // minimals will not override completes.
+        // We can safely push this data AS IS, as the store will ensure that minimals will not
+        // override completes.
         store.pushRetrieve(recordType, id, data);
+      }
+    });
+    SC.RunLoop.end();
+  },
+
+  notifyDidLoadRecord: function(store, recordType, dataHash, id) {
+    if (!this._isSupportedRecordType(recordType)) return;
+    
+    var ds = this._getDataStore(recordType);
+    var key = dataHash.type + '-' + id;
+    var storeKey = store.storeKeyFor(recordType, id);
+    var recordTypeStr = this._recordTypeToString(recordType);
+    var self = this;
+
+    if ((id + '').indexOf('-') === 0) {
+      // Don't want to save a record without an ID.
+      return;
+    }
+
+    // Get the data from the store, to utilise the minimal-complete merge code.
+    dataHash = store.readDataHash(storeKey); 
+    
+    ds.save({ key: key, record: dataHash }, function() {
+      if (this.recordRetrievalTimes === YES) {
+        self.lastRetrievedAt[recordTypeStr] = SC.DateTime.create().get('milliseconds');
+        self.lastRetrievedAtDidChange(store);
       }
     });
   },
 
-  notifyDidLoadRecord: function(store, recordType, dataHash, id) {
-    if(!this._isSupportedRecordType(recordType)) return NO;
-    
-    var source = this._getDataStore(recordType),
-        key = dataHash.type+'-'+id,
-        storeKey = store.storeKeyFor(recordType, id),
-        recordTypeStr = this._recordTypeToString(recordType),
-        self = this;
-
-    if ((id+'').indexOf('-') === 0) return; // we don't want to save a non id'd record.
-    // Get the data from the store, to utilise the minimal-complete merge code.
-    dataHash = store.readDataHash(storeKey); 
-    
-    source.save({
-      key: key,
-      record: dataHash
-    }, function() {
-      self.lastRetrievedAt[recordTypeStr] = SC.DateTime.create().get('milliseconds');
-      self.lastRetrievedAtDidChange(store);
-    });
-  },
-  
   retrieveRecord: function(store, storeKey, params) {
-    console.log("LocalDataSource.retrieveRecord");
     if (!store) {
-      console.error('No Store!!!');
+      console.error('Error retrieving record: Invalid store.');
       return NO;
     }
-    var recordType = store.recordTypeFor(storeKey),
-        that       = this,
-        id         = store.idFor(storeKey),
-        source     = this._getDataStore(recordType),
-        datahash   = store.readDataHash(storeKey);
-    if (!datahash) {
-      return NO;
-    }
-    var type = datahash.type;
+
+    var recordType = store.recordTypeFor(storeKey);
+    if (!this._isSupportedRecordType(recordType)) return NO;
+
+    var that = this;
+    var id = store.idFor(storeKey);
+    var ds = this._getDataStore(recordType);
+    var dataHash = store.readDataHash(storeKey);
+
+    if (!dataHash) return NO;
+
+    console.log('Retrieving %@:%@ from local cache...'.fmt(recordType.toString(), id));
+
+    var type = dataHash.type;
     
-    source.get("%@-%@".fmt(type, id), function(o) {
+    ds.get("%@-%@".fmt(type, id), function(o) {
+      console.log('Found %@:%@ in local cache.'.fmt(recordType.toString(), id));
       that._retrieveCompleted(store, id, o, recordType);
     });
     
     return SC.MIXED_STATE;
   },
-  
+ 
   _retrieveCompleted: function(store, id, record, recordType) {
     var data = record.record;
+    SC.RunLoop.begin();
     store.pushRetrieve(recordType, id, data);
+    SC.RunLoop.end();
   },
   
   retrieveRecords: function(store, storeKeys, ids) {
-    console.log("LocalDataSource.retrieveRecords");
     return this._handleEach(store, storeKeys, this.retrieveRecord, ids);  
   },
   
   createRecord: function(store, storeKey) {
-    console.log("LocalDataSource.createRecord");
     if (!store) {
-      console.error('No Store!!!');
+      console.error('Error creating record: Invalid store.');
       return NO;
     }
-    var recordType = store.recordTypeFor(storeKey),
-        id         = store.idFor(storeKey),
-        source     = this._getDataStore(recordType),
-        dataHash   = store.readDataHash(storeKey),
-        key        = dataHash.type+'-'+id,
-        that       = this;
 
-    if ((id+'').indexOf('-') === 0) return; // we don't want to save a non id'd record.
+    var recordType = store.recordTypeFor(storeKey);
+    if (!this._isSupportedRecordType(recordType)) return NO;
 
-    source.save({
-      key: key,
-      record: dataHash
-    }, function() {
-      console.log('created record was saved');
-    });
-    
+    var that = this;
+    var id = store.idFor(storeKey);
+    var ds = this._getDataStore(recordType);
+    var dataHash = store.readDataHash(storeKey);
+    var key = dataHash.type + '-' + id;
+
+    if ((id + '').indexOf('-') === 0) {
+      // Don't want to create a record without an ID.
+      return;
+    }
+
+    ds.save({ key: key, record: dataHash });
+
     return SC.MIXED_STATE;
   },
   
   notifyDidCreateRecord: function(store, recordType, dataHash, id) {
-    if(!this._isSupportedRecordType(recordType)) return NO;
+    if (!this._isSupportedRecordType(recordType)) return;
     
-    var source = this._getDataStore(recordType),
-        key = dataHash.type+'-'+id,
-        storeKey = store.storeKeyFor(recordType, id);
+    var ds = this._getDataStore(recordType);
+    var key = dataHash.type + '-' + id;
+    var storeKey = store.storeKeyFor(recordType, id);
 
-    if ((id+'').indexOf('-') === 0) return; // we don't want to save a non id'd record.
+    if ((id + '').indexOf('-') === 0) {
+      // Don't want to create a record without an ID.
+      return;
+    }
 
     // Get the data from the store, to utilise the minimal-complete merge code.
     dataHash = store.readDataHash(storeKey); 
     
-    source.save({
-      key: key,
-      record: dataHash
-    }, function() {
-      // console.log('loaded record was saved');
+    ds.save({ key: key, record: dataHash }, function() {
+      console.log('Created %@:%@ in local cache.'.fmt(recordType.toString(), id));
     });
   },
   
   destroyRecord: function(store, storeKey, params) {
-    console.log("LocalDataSource.destroyRecord");
-    var recordType = store.recordTypeFor(storeKey),
-        id         = store.idFor(storeKey),
-        source     = this._getDataStore(recordType),
-        type       = store.readDataHash(storeKey).type;
-    
-    source.remove("%@-%@".fmt(type, id));
+    if (!store) {
+      console.error('Error destroying record: Invalid store.');
+      return NO;
+    }
+
+    var recordType = store.recordTypeFor(storeKey);
+    if (!this._isSupportedRecordType(recordType)) return NO;
+
+    var id = store.idFor(storeKey);
+    var ds = this._getDataStore(recordType);
+    var type = store.readDataHash(storeKey).type;
+
+    ds.remove("%@-%@".fmt(type, id), function() {
+      console.log('Destroyed %@:%@ in local cache.'.fmt(recordType.toString(), id));
+    });
     
     return SC.MIXED_STATE;
   },
 
   notifyDidDestroyRecord: function(store, recordType, dataHash, id) {
-    // console.log('been notified!');
-    if(!this._isSupportedRecordType(recordType)) return NO;
+    if (!this._isSupportedRecordType(recordType)) return;
 
-    var source = this._getDataStore(recordType),
-        key = dataHash.type+'-'+id;
+    var ds = this._getDataStore(recordType);
+    var key = dataHash.type + '-' + id;
 
-    source.remove(key, function() {
-      // console.log('loaded record was saved') ;
-    });
+    ds.remove(key);
   },
   
   updateRecord: function(store, storeKey, params) {
-    console.log("LocalDataSource.updateRecord");
     if (!store) {
-      console.error('No Store!!!');
+      console.error('Error creating record: Invalid store.');
       return NO;
     }
-    var recordType = store.recordTypeFor(storeKey),
-        id         = store.idFor(storeKey),
-        source     = this._getDataStore(recordType),
-        dataHash   = store.readDataHash(storeKey),
-        key        = dataHash.type+'-'+id;
-    
-    source.save({
-      key: key,
-      record: dataHash
-    }, function() {
-      console.log('updated record was saved');
+
+    var recordType = store.recordTypeFor(storeKey);
+    if (!this._isSupportedRecordType(recordType)) return NO;
+
+    var id = store.idFor(storeKey);
+    var ds = this._getDataStore(recordType);
+    var dataHash = store.readDataHash(storeKey);
+    var key = dataHash.type + '-' + id;
+
+    ds.save({ key: key, record: dataHash }, function() {
+      console.log('Updated %@:%@ in local cache.'.fmt(recordType.toString(), id));
     });
-    
+
     return SC.MIXED_STATE;
   },
   
   nuke: function(recordType) {
-    var source = this._getDataStore(recordType);
-    source.nuke();
+    var ds = this._getDataStore(recordType);
+    ds.nuke();
   },
   
   _recordTypeToString: function(recordType) {
     if (SC.typeOf(recordType) !== SC.T_STRING) {
       recordType = recordType.toString();
     }
-    // Clean the string, to make sure we don't have any '.'s
+
+    // Clean the string, to make sure we don't have any periods.
     recordType = recordType.replace(/\./, '');
     return recordType;
   },
@@ -278,34 +321,40 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
     return supported.contains(recordType);
   },
   
-  supports_sql_storage: function() {
+  _supportsSqlStorage: function() {
     return ('openDatabase' in window) && window['openDatabase'] !== null;
   },
   
-  supports_gears_storage: function() {
+  _supportsGearsStorage: function() {
     return (window.google && google.gears);
   },
   
-  supports_local_storage: function() {
+  _supportsLocalStorage: function() {
     return ('localStorage' in window) && window['localStorage'] !== null;
   }
   
 });
 
+// Class-level datastores.
 SCUDS.LocalDataSource.dataStoreWithAdapter = {};
+
+/**
+ * Returns a class-level datastore.
+ */
 SCUDS.LocalDataSource.getDataStore = function(storeName) {
-  var ds = SCUDS.LocalDataSource.dataStoreWithAdapter[storeName],
-      storageMethod = 'dom';
+  var ds = SCUDS.LocalDataSource.dataStoreWithAdapter[storeName];
+  var storageMethod = 'dom';
+
   if (ds) return ds;
 
-  console.log('.Getting DB with name %@'.fmt(storeName));
+  console.log('Creating new cached datastore [%@:%@]'.fmt(storageMethod, storeName));
 
   ds = new Lawnchair({
-    table:storeName,
-    adaptor:storageMethod,
+    table: storeName,
+    adaptor: storageMethod,
     onError: function(tx, e, msg) {
-      console.log("Error!: "+msg);
-      console.log(e);
+      console.error("Lawnchair error: " + msg);
+      console.error(e);
     }
   });
 
@@ -313,9 +362,9 @@ SCUDS.LocalDataSource.getDataStore = function(storeName) {
   return ds;
 };
 
-SCUDS.LocalDataSource.clearAll = function(callBack) {
+SCUDS.LocalDataSource.clearAll = function(callback) {
   // TODO: [GD] Make this not just for localStorage in ablove changes.
-  console.log('Clearning LocalStorage.');
   localStorage.clear();
-  callBack();
+  console.log('Cleared local data cache.');
+  if (SC.typeOf(callback) === SC.T_FUNCTION) callback();
 };
