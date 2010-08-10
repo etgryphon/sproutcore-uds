@@ -22,8 +22,6 @@ Lawnchair.prototype = {
 			'air-async':window.AIRSQLiteAsyncAdaptor
 		};
 	
-	  console.log("Lawnchair starting with adaptor %@".fmt(opts.adaptor)) ;
-	
 		this.adaptor = opts.adaptor ? new adaptors[opts.adaptor](opts) : new WebkitSQLiteAdaptor(opts);
 	},
 	
