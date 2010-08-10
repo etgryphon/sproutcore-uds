@@ -10,7 +10,7 @@ sc_require('lib/Lawnchair');
  * @version Beta1
  * @since AB2
  */
-SCUDS.localDataSource = SC.DataSource.extend({
+SCUDS.LocalDataSource = SC.DataSource.extend({
 
 //  init: function() {
 //    var source = this._getDataSource('lastRetrievedAt'),
@@ -316,9 +316,9 @@ SCUDS.localDataSource = SC.DataSource.extend({
   
 }) ;
 
-SCUDS.localDataSource.dataSourceWithAdapter = {} ;
-SCUDS.localDataSource.getDataSource = function(storeName) {
-  var ds = SCUDS.localDataSource.dataSourceWithAdapter[storeName],
+SCUDS.LocalDataSource.dataSourceWithAdapter = {} ;
+SCUDS.LocalDataSource.getDataSource = function(storeName) {
+  var ds = SCUDS.LocalDataSource.dataSourceWithAdapter[storeName],
       storageMethod = 'dom' ;
   if (ds) return ds ;
 
@@ -333,11 +333,11 @@ SCUDS.localDataSource.getDataSource = function(storeName) {
     }
   });
 
-  SCUDS.localDataSource.dataSourceWithAdapter[storeName] = ds ;
+  SCUDS.LocalDataSource.dataSourceWithAdapter[storeName] = ds ;
   return ds ;
 } ;
 
-SCUDS.localDataSource.clearAll = function(callBack) {
+SCUDS.LocalDataSource.clearAll = function(callBack) {
   // TODO: [GD] Make this not just for localStorage in ablove changes.
   console.log('Clearning LocalStorage.') ;
   localStorage.clear() ;

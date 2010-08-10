@@ -1,5 +1,5 @@
 /**
- * SCUDS. localDataSource Unit Test
+ * SCUDS. LocalDataSource Unit Test
  *
  * @author Geoffrey Donaldson
  */
@@ -27,7 +27,7 @@
     }
   }) ;
   
-  local = SCUDS.localDataSource.create({
+  local = SCUDS.LocalDataSource.create({
     isTesting: YES,
     _didFetch: function() {
       console.log('LocalDataSource._didFetch called') ;
@@ -38,7 +38,7 @@
   
   storageMethod = local.get('storageMethod') ;
   
-  module("SCUDS. localDataSource", {
+  module("SCUDS. LocalDataSource", {
     setup: function() {
       store = SC.Store.create({
         
