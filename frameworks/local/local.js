@@ -13,7 +13,7 @@ sc_require('lib/Lawnchair');
 SCUDS.LocalDataSource = SC.DataSource.extend({
 
 //  init: function() {
-//    var source = this._getDataSource('lastRetrievedAt'),
+//    var source = this._getDataStore('lastRetrievedAt'),
 //        self = this ;
 //
 //    source.get('lastRetrievedAt', function(o) {
@@ -47,10 +47,10 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
    */
   supportedRecordTypes: null,
   
-  _dataSourceWithAdapter: {},
-  _getDataSource:function(recordType, version) {
+  _dataStoreWithAdapter: {},
+  _getDataStore:function(recordType, version) {
     recordType = this._recordTypeToString(recordType) ;
-    var ds = this._dataSourceWithAdapter[recordType],
+    var ds = this._dataStoreWithAdapter[recordType],
         storageMethod = this.get('storageMethod') ;
     if (ds) return ds ;
     
@@ -68,7 +68,7 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
     // TODO: test to see if schema version is correct.
     // If not, nuke it.
     
-    this._dataSourceWithAdapter[recordType] = ds ;
+    this._dataStoreWithAdapter[recordType] = ds ;
     return ds ;
   },
 
@@ -79,7 +79,7 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
 
   lastRetrievedAtDidChange: function(store, dontSave) {
     var lastRetrievedAt = this.get('lastRetrievedAt'),
-        source = this._getDataSource('lastRetrievedAt') ;
+        source = this._getDataStore('lastRetrievedAt') ;
 
     store.set('lastRetrievedAt', lastRetrievedAt) ;
 
@@ -100,7 +100,7 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
     
     if(!this._isSupportedRecordType(recordType)) return NO ;
     
-    source = this._getDataSource(recordType);
+    source = this._getDataStore(recordType);
     
     source.all(function(records) {
       self._didFetch(store, source, query, records, recordType) ;
@@ -128,7 +128,7 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
     // console.log('been notified!');
     if(!this._isSupportedRecordType(recordType)) return NO ;
     
-    var source = this._getDataSource(recordType),
+    var source = this._getDataStore(recordType),
         key = dataHash.type+'-'+id,
         storeKey = store.storeKeyFor(recordType, id),
         recordTypeStr = this._recordTypeToString(recordType),
@@ -160,7 +160,7 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
     var recordType = store.recordTypeFor(storeKey),
         that       = this,
         id         = store.idFor(storeKey),
-        source     = this._getDataSource(recordType),
+        source     = this._getDataStore(recordType),
         datahash   = store.readDataHash(storeKey) ;
     if (!datahash) {
       return NO ;
@@ -192,7 +192,7 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
     }
     var recordType = store.recordTypeFor(storeKey),
         id         = store.idFor(storeKey),
-        source     = this._getDataSource(recordType),
+        source     = this._getDataStore(recordType),
         dataHash   = store.readDataHash(storeKey),
         key        = dataHash.type+'-'+id,
         that       = this ;
@@ -213,7 +213,7 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
     // console.log('been notified!');
     if(!this._isSupportedRecordType(recordType)) return NO ;
     
-    var source = this._getDataSource(recordType),
+    var source = this._getDataStore(recordType),
         key = dataHash.type+'-'+id,
         storeKey = store.storeKeyFor(recordType, id) ;
 
@@ -238,7 +238,7 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
     console.log("LocalDataSource.destroyRecord") ;
     var recordType = store.recordTypeFor(storeKey),
         id         = store.idFor(storeKey),
-        source     = this._getDataSource(recordType),
+        source     = this._getDataStore(recordType),
         type       = store.readDataHash(storeKey).type ;
     
     source.remove("%@-%@".fmt(type, id)) ;
@@ -250,7 +250,7 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
     // console.log('been notified!');
     if(!this._isSupportedRecordType(recordType)) return NO ;
 
-    var source = this._getDataSource(recordType),
+    var source = this._getDataStore(recordType),
         key = dataHash.type+'-'+id ;
 
     source.remove(key, function() {
@@ -266,7 +266,7 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
     }
     var recordType = store.recordTypeFor(storeKey),
         id         = store.idFor(storeKey),
-        source     = this._getDataSource(recordType),
+        source     = this._getDataStore(recordType),
         dataHash   = store.readDataHash(storeKey),
         key        = dataHash.type+'-'+id ;
     
@@ -281,7 +281,7 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
   },
   
   nuke: function(recordType) {
-    var source = this._getDataSource(recordType) ;
+    var source = this._getDataStore(recordType) ;
     source.nuke() ;
   },
   
@@ -316,9 +316,9 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
   
 }) ;
 
-SCUDS.LocalDataSource.dataSourceWithAdapter = {} ;
-SCUDS.LocalDataSource.getDataSource = function(storeName) {
-  var ds = SCUDS.LocalDataSource.dataSourceWithAdapter[storeName],
+SCUDS.LocalDataSource.dataStoreWithAdapter = {} ;
+SCUDS.LocalDataSource.getDataStore = function(storeName) {
+  var ds = SCUDS.LocalDataSource.dataStoreWithAdapter[storeName],
       storageMethod = 'dom' ;
   if (ds) return ds ;
 
@@ -333,7 +333,7 @@ SCUDS.LocalDataSource.getDataSource = function(storeName) {
     }
   });
 
-  SCUDS.LocalDataSource.dataSourceWithAdapter[storeName] = ds ;
+  SCUDS.LocalDataSource.dataStoreWithAdapter[storeName] = ds ;
   return ds ;
 } ;
 
