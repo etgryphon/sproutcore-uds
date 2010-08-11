@@ -179,15 +179,16 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
     var id = store.idFor(storeKey);
     var ds = this._getDataStore(recordType);
     var dataHash = store.readDataHash(storeKey);
+    var recTypeStr = recordType.toString();
 
     if (!dataHash) return NO;
 
-    console.log('Retrieving %@:%@ from local cache...'.fmt(recordType.toString(), id));
+    console.log('Retrieving %@:%@ from local cache...'.fmt(recTypeStr, id));
 
     var type = dataHash.type;
     
     ds.get("%@-%@".fmt(type, id), function(o) {
-      console.log('Found %@:%@ in local cache.'.fmt(recordType.toString(), id));
+      console.log('Found %@:%@ in local cache.'.fmt(recTypeStr, id));
       that._retrieveCompleted(store, id, o, recordType);
     });
     
