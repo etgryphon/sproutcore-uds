@@ -127,8 +127,9 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
  
   _didFetch: function(store, source, query, records, recordType) {
     var id, data;
+
     console.log('Found %@ cached %@ records.'.fmt(records.length, recordType.toString()));
-    SC.RunLoop.begin();
+
     records.forEach(function(dataHash) {
       data = dataHash.record;
       if (data) {
@@ -138,7 +139,9 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
         store.pushRetrieve(recordType, id, data);
       }
     });
-    SC.RunLoop.end();
+
+    // Transition the query-backed record array to the READY state so that bindings will fire.
+    store.dataSourceDidFetchQuery(query);
   },
 
   notifyDidLoadRecord: function(store, recordType, dataHash, id) {
