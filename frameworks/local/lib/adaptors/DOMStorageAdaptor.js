@@ -69,12 +69,13 @@ DOMStorageAdaptor.prototype = {
   all:function(callback) {
     var cb = this.terseToVerboseCallback(callback);
     var results = [];
+    var id, tbl, key, obj;
     for (var i = 0, l = this.storage.length; i < l; ++i) {
-      var id = this.storage.key(i);
-      var tbl = id.split('::')[0];
-      var key = id.split('::').slice(1).join("::");
+      id = this.storage.key(i);
+      tbl = id.split('::')[0];
+      key = id.split('::').slice(1).join("::");
       if (tbl == this.table) {
-        var obj = this.deserialize(this.storage.getItem(id));
+        obj = this.deserialize(this.storage.getItem(id));
         obj.key = key;
         results.push(obj);
       }
