@@ -205,8 +205,12 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
     SC.RunLoop.end();
   },
   
+  //TODO: [SE, MB] only retreive records when asking for more than one
+  //otherwise call the remote data source
   retrieveRecords: function(store, storeKeys, ids) {
-    return this._handleEach(store, storeKeys, this.retrieveRecord, ids);  
+    if(storeKeys && storeKeys.get('length') > 1) return this._handleEach(store, storeKeys, this.retrieveRecord, ids);  
+    else return NO;
+    //return this._handleEach(store, storeKeys, this.retrieveRecord, ids);  
   },
   
   createRecord: function(store, storeKey) {
