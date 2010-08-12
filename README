@@ -8,12 +8,18 @@ Email me and we can add you to the project.
 
 - Foundation:
   [EXPERIMENTAL] Data Sources for Common Backends: CouchDB, Rails, etc
-- Amazon:
-  [EXPERIMENTAL] Data Source for Amazon's API
-- Digg:
-  [EXPERIMENTAL] Data Source for Digg's API
 - Twitter:
   [EXPERIMENTAL] Data Source for Twitter's search API
+- Local
+  [EXPERIMENTAL] Cascading Local Data Source that works in FF/Safari/Webkit and IE with Flash store
+
+=== FUTURE DEVELOPMENT ===
+- Amazon:
+  [EXPERIMENTAL] Data Source for Amazon's API
+- Facebook:
+  [EXPERIMENTAL] Data Source for Facebook's API
+- GitHub
+  [EXPERIMENTAL] Data Source for Githubs's API
   
 === INSTALLATION ===
 
@@ -22,9 +28,12 @@ In your frameworks directory, run:
   
 === CONTRIBUTORS ===
 
-Main Architect: Evin Grano
+Main Architect: Evin Grano (github: etgryphon, twitter: @etgryphon)
 Contributors:
-  - Josh Holt
+  - Josh Holt (github: joshholt, twitter: @cjk2121)
+  - Sean Eidemiller (github: seidemiller)
+  - Geoffrey Donaldson (github: geoffreyd, twitter: @geoffreyd)
+  
       
 === LICENSE ===
 
