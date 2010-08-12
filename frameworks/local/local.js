@@ -64,7 +64,6 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
       return ds;
     }
 
-    console.log('Creating new cached datastore [%@:%@]'.fmt(storageMethod, recordType));
     ds = new Lawnchair({
       table: recordType, 
       adaptor: storageMethod,
@@ -73,6 +72,8 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
         console.error(e);
       }
     });
+
+    console.log('Created new cached datastore [%@:%@]'.fmt(storageMethod, recordType));
     
     // TODO: [GD/SE] Test to see if schema version is correct; if not, nuke it.
  
