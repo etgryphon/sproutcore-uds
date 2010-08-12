@@ -141,7 +141,9 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
     });
 
     // Transition the query-backed record array to the READY state so that bindings will fire.
+    SC.RunLoop.begin();
     store.dataSourceDidFetchQuery(query);
+    SC.RunLoop.end();
   },
 
   notifyDidLoadRecord: function(store, recordType, dataHash, id) {
