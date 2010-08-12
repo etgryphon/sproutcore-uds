@@ -26,13 +26,11 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
   /**
    * Returns the best available browser-implemented storage method.
    *
-   * Order of preference: webkit (default) -> gears -> dom
+   * Order of preference: webkit (default) -> dom
    */
   storageMethod: function() {
     if (this._supportsSqlStorage()) {
       return 'webkit';
-    } else if (this._supportsGearsStorage()) {
-      return 'gears';
     } else if (this._supportsLocalStorage()) {
       return 'dom';
     }
