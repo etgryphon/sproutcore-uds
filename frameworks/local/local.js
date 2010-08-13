@@ -15,7 +15,7 @@ sc_require('lib/Lawnchair');
 SCUDS.LocalDataSource = SC.DataSource.extend({
 
   wantsNotification: YES,
-  recordRetrievalTimes: NO,
+  recordRetrievalTimes: YES,
   isTesting: NO,
   
   /*
@@ -86,21 +86,16 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
    */
   lastRetrievedAt: {},
 
-  lastRetrievedAtDidChange: function(store, dontSave) {
+  _lastRetrievedAtDidChange: function(store, dontSave) {
     var lastRetrievedAt = this.get('lastRetrievedAt');
-    var source = this._getDataStore('lastRetrievedAt');
+    var ds = this._getDataStore('lastRetrievedAt');
 
     store.set('lastRetrievedAt', lastRetrievedAt);
 
     if (dontSave) return;
 
     // Save lastRetrievedAt times to localStorage.
-    /*
-    source.save({
-      key: 'lastRetrievedAt',
-      record: lastRetrievedAt
-    }, function(){});
-    */
+    ds.save({ key: 'lastRetrievedAt', record: lastRetrievedAt }, function() {});
   },
 
   /**
@@ -165,7 +160,7 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
     ds.save({ key: key, record: dataHash }, function() {
       if (this.recordRetrievalTimes === YES) {
         self.lastRetrievedAt[recordTypeStr] = SC.DateTime.create().get('milliseconds');
-        self.lastRetrievedAtDidChange(store);
+        self._lastRetrievedAtDidChange(store);
       }
     });
   },
