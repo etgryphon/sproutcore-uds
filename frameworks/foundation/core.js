@@ -18,5 +18,5 @@
   
   You can also use the shorthand "SCUDS" instead of "Scuds".
 */
-var Scuds = Scuds || {};
-var SCUDS = SCUDS || Scuds ;
+window.Scuds = window.Scuds || SC.Object.create();
+window.SCUDS = window.SCUDS || window.Scuds ;
