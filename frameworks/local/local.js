@@ -18,22 +18,23 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
   recordRetrievalTimes: YES,
   isTesting: NO,
   
-  /*
-   * The browser-implemented storage method (default is webkit).
-   */
-  _storageMethod: 'webkit',
-
   /**
    * Returns the best available browser-implemented storage method.
    *
-   * Order of preference: webkit (default) -> dom
+   * Order of preference: webkit -> dom (default)
    */
   storageMethod: function() {
+    var ret = 'dom';
+
     if (this._supportsSqlStorage()) {
-      return 'webkit';
+      ret = 'webkit';
     } else if (this._supportsLocalStorage()) {
-      return 'dom';
+      ret = 'dom';
     }
+
+    console.log('Local storage mechanism: %@'.fmt(ret));
+    return ret;
+
   }.property().cacheable(),
   
   /**
@@ -73,8 +74,6 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
       }
     });
 
-    console.log('Created new cached datastore [%@:%@]'.fmt(storageMethod, recordType));
-    
     // TODO: [GD/SE] Test to see if schema version is correct; if not, nuke it.
  
     this._dataStoreWithAdapter[recordType] = ds;
@@ -352,8 +351,6 @@ SCUDS.LocalDataSource.getDataStore = function(storeName) {
   var storageMethod = 'dom';
 
   if (ds) return ds;
-
-  console.log('Creating new cached datastore [%@:%@]'.fmt(storageMethod, storeName));
 
   ds = new Lawnchair({
     table: storeName,
