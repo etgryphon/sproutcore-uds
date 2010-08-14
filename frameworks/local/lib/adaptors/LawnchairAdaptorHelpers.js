@@ -96,3 +96,4 @@ var LawnchairAdaptorHelpers = {
 		return eval('(' + json + ')');
 	}
 };
+

@@ -19,3 +19,4 @@ SCUDS.Tweet = SC.Record.extend(
   primaryKey: 'id'
 
 }) ;
+

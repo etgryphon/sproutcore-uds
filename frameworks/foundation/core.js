@@ -20,3 +20,4 @@
 */
 window.Scuds = window.Scuds || SC.Object.create();
 window.SCUDS = window.SCUDS || window.Scuds ;
+

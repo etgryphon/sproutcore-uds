@@ -51,3 +51,4 @@ SCUDS.NotifyingStore = SC.Store.extend({
     return ret;
   }
 });
+

@@ -374,3 +374,4 @@ SCUDS.LocalDataSource.clearAll = function(callback) {
   // console.log('Cleared local data cache.');
   // if (SC.typeOf(callback) === SC.T_FUNCTION) callback();
 };
+

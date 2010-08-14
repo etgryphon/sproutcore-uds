@@ -85,3 +85,4 @@ CookieAdaptor.prototype = {
 		}, callback);
 	}
 };
+

@@ -102,3 +102,4 @@ DOMStorageAdaptor.prototype = {
     });
   }
 };
+

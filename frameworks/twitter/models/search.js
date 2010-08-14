@@ -33,3 +33,4 @@ SCUDS.TwitterSearch = SC.Record.extend(
    }.property().cacheable()
  
 }) ;
+

@@ -164,3 +164,4 @@ WebkitSQLiteAdaptor.prototype = {
 		});
 	}
 };
+

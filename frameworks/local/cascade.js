@@ -66,3 +66,4 @@ SCUDS.NotifyingCascadeDataSource = SC.CascadeDataSource.extend({
     }
   }
 });
+
