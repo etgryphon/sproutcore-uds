@@ -370,7 +370,7 @@ SCUDS.LocalDataSource.getDataStore = function(storeName) {
 
 SCUDS.LocalDataSource.clearAll = function(callback) {
   // TODO: [GD] Make this not just for localStorage in ablove changes.
-  localStorage.clear();
-  console.log('Cleared local data cache.');
-  if (SC.typeOf(callback) === SC.T_FUNCTION) callback();
+  // localStorage.clear();
+  // console.log('Cleared local data cache.');
+  // if (SC.typeOf(callback) === SC.T_FUNCTION) callback();
 };
