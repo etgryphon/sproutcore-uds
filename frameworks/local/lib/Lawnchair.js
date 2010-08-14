@@ -7,7 +7,7 @@ sc_require('lib/adaptors/WebkitSQLiteAdaptor');
  */
 var Lawnchair = function(opts) {
 	this.init(opts);
-}
+};
 
 Lawnchair.prototype = {
 	
@@ -16,29 +16,29 @@ Lawnchair.prototype = {
 			'webkit':window.WebkitSQLiteAdaptor,
 			'dom':window.DOMStorageAdaptor,
 			'cookie':window.CookieAdaptor,
-			'userdata':window.UserDataAdaptor,
+			'userdata':window.UserDataAdaptor
 		};
 	
 		this.adaptor = opts.adaptor ? new adaptors[opts.adaptor](opts) : new WebkitSQLiteAdaptor(opts);
 	},
 	
 	// Save an object to the store. If a key is present then update. Otherwise create a new record.
-	save:function(obj, callback) {this.adaptor.save(obj, callback)},
+	save:function(obj, callback) {this.adaptor.save(obj, callback);},
 	
 	// Invokes a callback on an object with the matching key.
-	get:function(key, callback) {this.adaptor.get(key, callback)},
+	get:function(key, callback) {this.adaptor.get(key, callback);},
 
 	// Returns whether a key exists to a callback.
-	exists:function(callback) {this.adaptor.exists(callback)},
+	exists:function(callback) {this.adaptor.exists(callback);},
 	
 	// Returns all rows to a callback.
-	all:function(callback) {this.adaptor.all(callback)},
+	all:function(callback) {this.adaptor.all(callback);},
 	
 	// Removes a json object from the store.
-	remove:function(keyOrObj, callback) {this.adaptor.remove(keyOrObj, callback)},
+	remove:function(keyOrObj, callback) {this.adaptor.remove(keyOrObj, callback);},
 	
 	// Removes all documents from a store and returns self.
-	nuke:function(callback) {this.adaptor.nuke(callback);return this},
+	nuke:function(callback) {this.adaptor.nuke(callback);return this;},
 	
 	/**
 	 * Iterator that accepts two paramters (methods or eval strings):
@@ -48,7 +48,7 @@ Lawnchair.prototype = {
 	 *
 	 */
 	find:function(condition, callback) {
-		var is = (typeof condition == 'string') ? function(r){return eval(condition)} : condition;
+		var is = (typeof condition === 'string') ? function(r){return eval(condition);} : condition;
 		var cb = this.adaptor.terseToVerboseCallback(callback);
 	
 		this.each(function(record, index) {
