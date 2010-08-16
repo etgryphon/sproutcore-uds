@@ -8,8 +8,8 @@
  * window.name code courtesy Remy Sharp:
  *  http://24ways.org/2009/breaking-out-the-edges-of-the-browser
  *
- * Significant portions rewritten by Sean Eidemiller (sean@halcyon.cc) to make use of intermediary
- * lookup tables for better performance in Firefox when working with large data sets.
+ * Significant portions rewritten by Sean Eidemiller (sean@halcyon.cc) to increase performance in
+ * slower browsers (including Firefox 3.x and 4.0 betas).
  */
 var DOMStorageAdaptor = function(options) {
   for (var i in LawnchairAdaptorHelpers) {
@@ -52,17 +52,17 @@ DOMStorageAdaptor.prototype = {
   },
 
   save: function(obj, callback) {
-    var id = this.table + '::' + (obj.key || this.uuid());
-    delete obj.key;
+    var id = this.table + ':' + (obj.key || this.uuid());
+    var key = obj.key;
     this.storage.setItem(id, this.serialize(obj));
     if (callback) {
-      obj.key = id.split('::')[1];
+      obj.key = key;
       callback(obj);
     }
   },
 
   get: function(key, callback) {
-    var obj = this.deserialize(this.storage.getItem(this.table + '::' + key));
+    var obj = this.deserialize(this.storage.getItem(this.table + ':' + key));
     if (obj) {
       obj.key = key;
       if (callback) callback(obj);
@@ -72,27 +72,40 @@ DOMStorageAdaptor.prototype = {
   },
 
   all: function(callback) {
+    var allStart = new Date().getTime(), elapsedDeserialize = 0, elapsedGetItem = 0, temp;
     var cb = this.terseToVerboseCallback(callback);
     var results = [];
-    var id, tbl, key, obj;
+    var table = this.table;
+    var id, idTokens, obj, item;
 
-    for (var i = 0, l = this.storage.length; i < l; ++i) {
+    for (var i = 0, len = this.storage.length; i < len; ++i) {
       id = this.storage.key(i);
-      tbl = id.split('::')[0];
-      key = id.split('::').slice(1).join("::");
 
-      if (tbl == this.table) {
-        obj = this.deserialize(this.storage.getItem(id));
-        obj.key = key;
+      // Do a cheap short-circuit if possible.
+      if (id.charAt(0) !== table.charAt(0)) continue;
+
+      idTokens = id.split(':');
+
+      if (this.table === idTokens[0]) {
+        temp = new Date().getTime();
+        item = this.storage.getItem(id); 
+        elapsedGetItem += new Date().getTime() - temp;
+        temp = new Date().getTime();
+        obj = this.deserialize(item);
+        elapsedDeserialize += new Date().getTime() - temp;
+        obj.key = idTokens[1];
         results.push(obj);
       }
     }
 
+    console.log('Lawnchair: Elapsed time in all(): %@ms'.fmt(new Date().getTime() - allStart));
+    console.log('Lawnchair: Elapsed time in getItem(): %@ms'.fmt(elapsedGetItem));
+    console.log('Lawnchair: Elapsed time in deserialize(): %@ms'.fmt(elapsedDeserialize));
     if (cb) cb(results);
   },
 
-  remove: function(keyOrObj, callback) {
-    var key = this.table + '::' + (typeof keyOrObj === 'string' ? keyOrObj : keyOrObj.key);
+  remove: function(id, callback) {
+    var key = this.table + ':' + id;
     this.storage.removeItem(key);
     if (callback) callback();
   },
