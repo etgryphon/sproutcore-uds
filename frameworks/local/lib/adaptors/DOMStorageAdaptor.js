@@ -32,7 +32,7 @@ DOMStorageAdaptor.prototype = {
         var data = window.top.name ? self.deserialize(window.top.name) : {};
         return {
           setItem: function (key, value) {
-            data[key] = value+""; // force to string
+            data[key] = value + "";
             window.top.name = self.serialize(data);
           },
           removeItem: function (key) {
@@ -56,8 +56,8 @@ DOMStorageAdaptor.prototype = {
     delete obj.key;
     this.storage.setItem(id, this.serialize(obj));
     if (callback) {
-        obj.key = id.split('::')[1];
-        callback(obj);
+      obj.key = id.split('::')[1];
+      callback(obj);
     }
   },
 
