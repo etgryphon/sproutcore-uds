@@ -91,13 +91,13 @@ DOMStorageAdaptor.prototype = {
     if (cb) cb(results);
   },
 
-  remove:function(keyOrObj, callback) {
+  remove: function(keyOrObj, callback) {
     var key = this.table + '::' + (typeof keyOrObj === 'string' ? keyOrObj : keyOrObj.key);
     this.storage.removeItem(key);
     if (callback) callback();
   },
 
-  nuke:function(callback) {
+  nuke: function(callback) {
     var self = this;
     this.all(function(r) {
       for (var i = 0, l = r.length; i < l; i++) {
