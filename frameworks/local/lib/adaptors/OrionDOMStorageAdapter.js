@@ -26,19 +26,23 @@ OrionDOMStorageAdapter.prototype = {
 
   _indexArrayName: null,
 
+  /**
+   * Initializes the adapter with the given options (hash).
+   */
   init: function(options) {
     var self = this;
     this.storage = this.merge(window.localStorage, options.storage);
     this.table = this.merge('field', options.table);
 
     // Initialize the index table.
-    this._indexArrayName = this.table + '-index';
+    this._indexArrayName = this.table + ':index';
     var indexArray = this.deserialize(this.storage.getItem(this._indexArrayName));
     if (!indexArray) {
       indexArray = [];
       this.storage.setItem(this._indexArrayName, this.serialize(indexArray));
     }
  
+    // Fallback for the stupider browsers/versions.
     if (!(this.storage instanceof window.Storage)) {
       this.storage = (function () {
         // window.top.name ensures top level, and supports around 2Mb
@@ -64,6 +68,12 @@ OrionDOMStorageAdapter.prototype = {
     }
   },
 
+  /**
+   * Writes a single object to the local storage.
+   *
+   * @param {Object} obj The object to write.
+   * @param {Function} callback The optional callback to invoke on completion.
+   */
   save: function(obj, callback) {
     var table = this.table;
 
@@ -84,16 +94,27 @@ OrionDOMStorageAdapter.prototype = {
     }
   },
 
-  get: function(key, callback) {
-    var obj = this.deserialize(this.storage.getItem(this.table + ':' + key));
+  /**
+   * Reads a single object from the local storage.
+   *
+   * @param {String} id The ID of the object.
+   * @param {Function} callback The optional callback to invoke on completion.
+   */
+  get: function(id, callback) {
+    var obj = this.deserialize(this.storage.getItem(this.table + ':' + id));
     if (obj) {
-      obj.key = key;
+      obj.key = id;
       if (callback) callback(obj);
     } else {
       if (callback) callback(null);
     }
   },
 
+  /**
+   * Reads all of the objects in this table from the local storage.
+   *
+   * @param {Function} callback The optional callback to invoke on completion.
+   */
   all: function(callback) {
     var cb = this.terseToVerboseCallback(callback);
     var results = [];
@@ -117,6 +138,12 @@ OrionDOMStorageAdapter.prototype = {
     if (cb) cb(ret);
   },
 
+  /**
+   * Removes a single object from the local storage.
+   *
+   * @param {String} id The ID of the object.
+   * @param {Function} callback The optional callback to invoke on completion.
+   */
   remove: function(id, callback) {
     // TODO: [SE] Remove IDs from index array.
     var key = this.table + ':' + id;
@@ -124,6 +151,11 @@ OrionDOMStorageAdapter.prototype = {
     if (callback) callback();
   },
 
+  /**
+   * Removes all data associated with this table from the local storage.
+   *
+   * @param {Function} callback The optional callback to invoke on completion.
+   */
   nuke: function(callback) {
     var self = this;
 
