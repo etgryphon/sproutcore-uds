@@ -1,4 +1,5 @@
 sc_require('lib/adaptors/WebkitSQLiteAdaptor');
+sc_require('lib/adaptors/OrionDOMStorageAdapter');
 /**
  * Lawnchair
  * =========
@@ -15,6 +16,7 @@ Lawnchair.prototype = {
 		var adaptors = {
 			'webkit':window.WebkitSQLiteAdaptor,
 			'dom':window.DOMStorageAdaptor,
+                        'orion_dom':window.OrionDOMStorageAdapter,
 			'cookie':window.CookieAdaptor,
 			'userdata':window.UserDataAdaptor
 		};
