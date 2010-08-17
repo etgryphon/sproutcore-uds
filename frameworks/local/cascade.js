@@ -1,5 +1,11 @@
 /*globals SCUDS */
 
+/**
+ * SCUDS.NotifyingCascadeDataSource
+ *
+ * @author Geoffrey Donaldson
+ * @author Sean Eidemiller
+ */
 SCUDS.NotifyingCascadeDataSource = SC.CascadeDataSource.extend({
 
   /**
@@ -8,7 +14,18 @@ SCUDS.NotifyingCascadeDataSource = SC.CascadeDataSource.extend({
   wantsNotification: SC.Set.create(),
 
   /**
-   * Called when a record is loaded into the store.
+   * Called when multiple records are loaded into the store.
+   */
+  notifyDidLoadRecords: function(store, recordType, dataHashes, ids) {
+    var toNotify = this.wantsNotification;
+
+    toNotify.forEach(function(source) {
+      source.notifyDidLoadRecords(store, recordType, dataHashes, ids);
+    });
+  },
+
+  /**
+   * Called when a single record is loaded into the store.
    */
   notifyDidLoadRecord: function(store, recordType, dataHash, id) {
     var toNotify = this.wantsNotification;
@@ -27,7 +44,7 @@ SCUDS.NotifyingCascadeDataSource = SC.CascadeDataSource.extend({
   },
  
   /**
-   * Called when a record is created in the store.
+   * Called when a single record is created in the store.
    */
   notifyDidCreateRecord: function(store, recordType, dataHash, id) {
     var toNotify = this.wantsNotification;

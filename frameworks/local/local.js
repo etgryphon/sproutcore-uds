@@ -204,12 +204,11 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
     console.log('Found %@ cached %@ records.'.fmt(records.length, recordType.toString()));
 
     records.forEach(function(dataHash) {
-      data = dataHash.record;
-      if (data) {
-        id = data.id;
-        // We can safely push this data AS IS, as the store will ensure that minimals will not
-        // override completes.
-        store.pushRetrieve(recordType, id, data);
+      if (dataHash) {
+        id = dataHash.id;
+        // We can safely push this data AS IS and the store will ensure that minimals do not
+        // overwrite completes.
+        store.pushRetrieve(recordType, id, dataHash);
       }
     });
 
@@ -219,22 +218,31 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
     SC.RunLoop.end();
   },
 
-  notifyDidLoadRecord: function(store, recordType, dataHash, id) {
+  notifyDidLoadRecords: function(store, recordType, dataHashes, ids) {
     if (!this._isRecordTypeSupported(recordType)) return;
-    
-    var ds = this._getDataStoreForRecordType(recordType);
-    var storeKey = store.storeKeyFor(recordType, id);
-    var me = this;
 
-    if ((id + '').indexOf('-') === 0) {
-      // Don't want to save a record without an ID.
-      return;
+    var me = this;
+    var ds = this._getDataStoreForRecordType(recordType);
+    var len = (dataHashes && dataHashes.length) ? dataHashes.length : 0;
+    var pk = recordType.prototype.primaryKey;
+    var sk, id;
+
+    if (!ids) ids = [];
+
+    // Get the data from the store to utilize the minimal-complete merge code.
+    for (var i = 0; i < len; i++) { 
+      if (ids[i]) {
+        id = ids[i];
+      } else {
+        id = ids[i] = dataHashes[i][pk];
+      }
+
+      sk = store.storeKeyFor(recordType, id);
+      dataHashes[i] = store.readDataHash(sk);
     }
 
-    // Get the data from the store, to utilise the minimal-complete merge code.
-    dataHash = store.readDataHash(storeKey); 
-    
-    ds.save({ key: id, record: dataHash }, function() {
+    // Write the records to the local storage.
+    ds.save({ key: ids, records: dataHashes }, function() {
       if (this.recordRetrievalTimes === YES) {
         me.lastRetrievedAt[recordType.toString()] = SC.DateTime.create().get('milliseconds');
         me._lastRetrievedAtDidChange(store);
@@ -272,7 +280,7 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
   },
  
   _retrieveCompleted: function(store, id, record, recordType) {
-    var data = record.record;
+    var data = record;
     SC.RunLoop.begin();
     store.pushRetrieve(recordType, id, data);
     SC.RunLoop.end();
@@ -284,6 +292,29 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
     if(storeKeys && storeKeys.get('length') > 1) return this._handleEach(store, storeKeys, this.retrieveRecord, ids);  
     else return NO;
     //return this._handleEach(store, storeKeys, this.retrieveRecord, ids);  
+  },
+
+  notifyDidLoadRecord: function(store, recordType, dataHash, id) {
+    if (!this._isRecordTypeSupported(recordType)) return;
+
+    // NOTE: [SE] Pretty sure we don't actually need this, because only new records created locally
+    // will have a negative ID, and they're not written to the store with loadRecord().
+    // if ((id + '').indexOf('-') === 0) return;
+
+    var ds = this._getDataStoreForRecordType(recordType);
+    var storeKey = store.storeKeyFor(recordType, id);
+    var me = this;
+
+    // Get the data from the store to utilise the minimal-complete merge code.
+    dataHash = store.readDataHash(storeKey);
+
+    // Write the record to the local storage.
+    ds.save({ key: id, record: dataHash }, function() {
+      if (this.recordRetrievalTimes === YES) {
+        me.lastRetrievedAt[recordType.toString()] = SC.DateTime.create().get('milliseconds');
+        me._lastRetrievedAtDidChange(store);
+      }
+    });
   },
   
   createRecord: function(store, storeKey) {

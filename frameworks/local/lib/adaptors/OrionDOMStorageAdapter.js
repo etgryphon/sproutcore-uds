@@ -69,29 +69,61 @@ OrionDOMStorageAdapter.prototype = {
   },
 
   /**
-   * Writes a single object to the local storage.
+   * Writes a single object or an array of objects to the local storage.
    *
-   * @param {Object} obj The object to write.
+   * @param {Object|Array} obj The object or array of objects to write.
    * @param {Function} callback The optional callback to invoke on completion.
    */
   save: function(obj, callback) {
-    var table = this.table;
+    var key = obj.key;
+
+    if (key instanceof Array) {
+      // Got an array of objects.
+      this._saveAll(obj, callback);
+      return;
+    }
 
     // Store the ID of the object in the index array.
     var index = this.deserialize(this.storage[this._indexArrayName]);
-    var id = this.table + ':' + (obj.key || this.uuid());
-    var key = obj.key;
+    var id = this.table + ':' + (key || this.uuid());
 
     index.push(id);
     this.storage.setItem(this._indexArrayName, this.serialize(index));
 
     // Store the object itself.
-    this.storage.setItem(id, this.serialize(obj));
+    this.storage.setItem(id, this.serialize(obj.record));
 
-    if (callback) {
-      obj.key = key;
-      callback(obj);
+    // Invoke the callback.
+    if (callback) callback(obj);
+  },
+
+  _saveAll: function(obj, callback) {
+    var table = this.table;
+    var ids = obj.key;
+    var records = obj.records;
+    var index = this.deserialize(this.storage[this._indexArrayName]);
+    var currIndex, id;
+
+    for (var i = 0, len = ids.length; i < len; i++) {
+      // Store the ID of the record in the index array.
+      id = this.table + ':' + ids[i];
+      currIndex = index.indexOf(id);
+
+      if (currIndex <= 0) {
+        index.push(id);
+      } else {
+        index[currIndex] = id;
+      }
+
+      // Store the record itself.
+      this.storage.setItem(id, this.serialize(records[i]));
     }
+
+    // Reserialize the index array.
+    this.storage.setItem(this._indexArrayName, this.serialize(index));
+
+    // Invoke the callback.
+    if (callback) callback();
   },
 
   /**
@@ -135,6 +167,7 @@ OrionDOMStorageAdapter.prototype = {
     var allRecords = results.join(',');
     var ret = this.deserialize('[' + allRecords + ']');
 
+    // Invoke the callback.
     if (cb) cb(ret);
   },
 
@@ -148,6 +181,8 @@ OrionDOMStorageAdapter.prototype = {
     // TODO: [SE] Remove IDs from index array.
     var key = this.table + ':' + id;
     this.storage.removeItem(key);
+
+    // Invoke the callback.
     if (callback) callback();
   },
 
@@ -165,11 +200,12 @@ OrionDOMStorageAdapter.prototype = {
         self.remove(r[i]);
       }
 
+      // Remove the index array.
+      self.remove(self._indexArrayName);
+
+      // Invoke the callback.
       if (callback) callback();
     });
-
-    // Remove the index array.
-    this.remove(this._indexArrayName);
   }
 };
 
