@@ -175,11 +175,13 @@ OrionDOMStorageAdapter.prototype = {
     }
 
     // Concatenate the entire results array and deserialize.
-    var allRecords = results.join(',');
-    var ret = this.deserialize('[' + allRecords + ']');
+    if (results.length > 0) {
+      var allRecords = results.join(',');
+      results = this.deserialize('[' + allRecords + ']');
+    }
 
     // Invoke the callback.
-    if (cb) cb(ret);
+    if (cb) cb(results);
   },
 
   /**
