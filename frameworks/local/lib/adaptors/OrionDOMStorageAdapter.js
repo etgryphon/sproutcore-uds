@@ -189,9 +189,17 @@ OrionDOMStorageAdapter.prototype = {
    * @param {Function} callback The optional callback to invoke on completion.
    */
   remove: function(id, callback) {
-    // TODO: [SE] Remove IDs from index array.
+    // Remove the record.
     var key = this._keyPrefix + id;
     this.storage.removeItem(key);
+
+    // Remove the ID from the index array.
+    var index = this.deserialize(this.storage[this._indexArrayName]);
+    var currIndex = index.indexOf(key);
+    if (currIndex >= 0) {
+      index.pop(currIndex);
+      this.storage.setItem(this._indexArrayName, this.serialize(index));  
+    }
 
     // Invoke the callback.
     if (callback) callback();
