@@ -26,6 +26,7 @@ var OrionDOMStorageAdapter = function(options) {
 OrionDOMStorageAdapter.prototype = {
 
   _indexArrayName: null,
+  _keyPrefix: null,
 
   /**
    * Initializes the adapter with the given options (hash).
@@ -34,9 +35,10 @@ OrionDOMStorageAdapter.prototype = {
     var self = this;
     this.storage = this.merge(window.localStorage, options.storage);
     this.table = this.merge('field', options.table);
+    this._keyPrefix = this.table + ':';
 
     // Initialize the index table.
-    this._indexArrayName = this.table + ':index';
+    this._indexArrayName = this._keyPrefix + 'index';
     var indexArray = this.deserialize(this.storage.getItem(this._indexArrayName));
     if (!indexArray) {
       indexArray = [];
@@ -86,7 +88,7 @@ OrionDOMStorageAdapter.prototype = {
 
     // Store the ID of the object in the index array.
     var index = this.deserialize(this.storage[this._indexArrayName]);
-    var id = this.table + ':' + (key || this.uuid());
+    var id = this._keyPrefix + (key || this.uuid());
 
     index.push(id);
     this.storage.setItem(this._indexArrayName, this.serialize(index));
@@ -107,7 +109,7 @@ OrionDOMStorageAdapter.prototype = {
 
     for (var i = 0, len = ids.length; i < len; i++) {
       // Store the ID of the record in the index array.
-      id = this.table + ':' + ids[i];
+      id = this._keyPrefix + ids[i];
       currIndex = index.indexOf(id);
 
       if (currIndex <= 0) {
@@ -134,7 +136,7 @@ OrionDOMStorageAdapter.prototype = {
    * @param {Function} callback The optional callback to invoke on completion.
    */
   get: function(id, callback) {
-    var obj = this.deserialize(this.storage.getItem(this.table + ':' + id));
+    var obj = this.deserialize(this.storage.getItem(this._keyPrefix + id));
     if (obj) {
       obj.key = id;
       if (callback) callback(obj);
@@ -180,7 +182,7 @@ OrionDOMStorageAdapter.prototype = {
    */
   remove: function(id, callback) {
     // TODO: [SE] Remove IDs from index array.
-    var key = this.table + ':' + id;
+    var key = this._keyPrefix + id;
     this.storage.removeItem(key);
 
     // Invoke the callback.
