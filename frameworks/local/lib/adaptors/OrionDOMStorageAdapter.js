@@ -25,6 +25,7 @@ var OrionDOMStorageAdapter = function(options) {
 
 OrionDOMStorageAdapter.prototype = {
 
+  supportsChunkedLoads: YES,
   _indexArrayName: null,
   _keyPrefix: null,
 
@@ -109,16 +110,21 @@ OrionDOMStorageAdapter.prototype = {
    *
    * @param {Object} obj The object containing the records to write.
    *    Should be of the form { key: [<ids>], records: [<records>] }
+   *    May also include startIndex and count parameters (both Numbers) for chunked loading.
    * @param {Function} callback The optional callback to invoke on completion.
    */
   _saveAll: function(obj, callback) {
     var table = this.table;
     var ids = obj.key;
     var records = obj.records || obj.record;
+    var startAt = obj.startIndex || 0;
+    var count = obj.count;
+    var len = ids.length;
+    var endAt = count ? (len - startAt > count ? startAt + count : len) : len;
     var index = this.deserialize(this.storage[this._indexArrayName]);
     var currIndex, id;
 
-    for (var i = 0, len = ids.length; i < len; i++) {
+    for (var i = startAt; i < endAt; i++) {
       // Store the ID of the record in the index array.
       id = this._keyPrefix + ids[i];
       currIndex = index.indexOf(id);

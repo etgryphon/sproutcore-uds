@@ -17,6 +17,7 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
   wantsNotification: YES,
   recordRetrievalTimes: YES,
   isTesting: NO,
+  chunkSize: 200,
 
   /**
    * Initialize the various data structrues used by the local data source.
@@ -166,15 +167,14 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
 
   _lastRetrievedAtDidChange: function(store, dontSave) {
     var lastRetrievedAt = this.get('lastRetrievedAt');
-    var lds = this._getDataStore('SCUDS.LocalDataSource');
+    var lds = SCUDS.LocalDataSource.getDataStore('SCUDS.LocalDataSource');
 
-    // TODO: [SE] Is this necessary?
     store.set('lastRetrievedAt', lastRetrievedAt);
 
     if (dontSave) return;
 
     // Save lastRetrievedAt times to localStorage.
-    lds.save({ key: 'lastRetrievedAt', map: lastRetrievedAt }, function() {});
+    lds.save({ key: 'lastRetrievedAt', map: lastRetrievedAt });
   },
 
   /**
@@ -241,13 +241,34 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
       dataHashes[i] = store.readDataHash(sk);
     }
 
-    // Write the records to the local storage.
-    ds.save({ key: ids, records: dataHashes }, function() {
-      if (this.recordRetrievalTimes === YES) {
-        me.lastRetrievedAt[recordType.toString()] = SC.DateTime.create().get('milliseconds');
-        me._lastRetrievedAtDidChange(store);
-      }
-    });
+    // Write the records to the local storage (in chunks).
+    this._chunkedLoad(store, recordType, dataHashes, ids, 0, ds);
+  },
+
+  _chunkedLoad: function(store, recordType, dataHashes, ids, startIndex, ds) {
+    var chunkSize = this.get('chunkSize');
+    var len = ids.length;
+    var me = this;
+
+    if (!ds.adaptor.supportsChunkedLoads || len - startIndex < chunkSize) {
+      var updateLastRetrievedAt = function() {
+        if (me.recordRetrievalTimes === YES) {
+          me.lastRetrievedAt[recordType.toString()] = SC.DateTime.create().get('milliseconds');
+          me._lastRetrievedAtDidChange(store);
+        }
+      };
+
+      this.invokeLater(function() {
+        ds.save({ key: ids, records: dataHashes, startIndex: startIndex, count: chunkSize },
+          updateLastRetrievedAt);
+      });
+
+    } else {
+      this.invokeLater(function() {
+        ds.save({ key: ids, records: dataHashes, startIndex: startIndex, count: chunkSize });
+        me._chunkedLoad(store, recordType, dataHashes, ids, startIndex + chunkSize, ds);
+      });
+    }
   },
 
   retrieveRecord: function(store, storeKey, params) {
