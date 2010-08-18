@@ -122,7 +122,7 @@ OrionDOMStorageAdapter.prototype = {
       // Store the ID of the record in the index array.
       id = this._keyPrefix + ids[i];
       currIndex = index.indexOf(id);
-      if (currIndex <= 0) index.push(id);
+      if (currIndex < 0) index.push(id);
 
       // Store the record itself.
       this.storage.setItem(id, this.serialize(records[i]));
