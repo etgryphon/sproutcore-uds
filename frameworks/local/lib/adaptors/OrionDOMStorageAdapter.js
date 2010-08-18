@@ -72,9 +72,10 @@ OrionDOMStorageAdapter.prototype = {
   },
 
   /**
-   * Writes a single object or an array of objects to the local storage.
+   * Writes a single record or an array of records to the local storage.
    *
-   * @param {Object|Array} obj The object or array of objects to write.
+   * @param {Object} obj The object containing the record to write.
+   *    Should be of the form { key: <id>, record: <record> }
    * @param {Function} callback The optional callback to invoke on completion.
    */
   save: function(obj, callback) {
@@ -86,20 +87,27 @@ OrionDOMStorageAdapter.prototype = {
       return;
     }
 
-    // Store the ID of the object in the index array.
+    // Store the ID of the record in the index array.
     var index = this.deserialize(this.storage[this._indexArrayName]);
     var id = this._keyPrefix + (key || this.uuid());
 
     index.push(id);
     this.storage.setItem(this._indexArrayName, this.serialize(index));
 
-    // Store the object itself.
+    // Store the record itself.
     this.storage.setItem(id, this.serialize(obj.record));
 
     // Invoke the callback.
     if (callback) callback(obj);
   },
 
+  /**
+   * Writes multiple records to the local storage.
+   *
+   * @param {Object} obj The object containing the records to write.
+   *    Should be of the form { key: [<ids>], records: [<records>] }
+   * @param {Function} callback The optional callback to invoke on completion.
+   */
   _saveAll: function(obj, callback) {
     var table = this.table;
     var ids = obj.key;
@@ -130,15 +138,15 @@ OrionDOMStorageAdapter.prototype = {
   },
 
   /**
-   * Reads a single object from the local storage.
+   * Reads a single record from the local storage.
    *
-   * @param {String} id The ID of the object.
+   * @param {String} id The ID of the record.
    * @param {Function} callback The optional callback to invoke on completion.
    */
   get: function(id, callback) {
-    var obj = this.deserialize(this.storage.getItem(this._keyPrefix + id));
-    if (obj) {
-      obj.key = id;
+    var rec = this.deserialize(this.storage.getItem(this._keyPrefix + id));
+    if (rec) {
+      rec.key = id;
       if (callback) callback(obj);
     } else {
       if (callback) callback(null);
@@ -146,7 +154,7 @@ OrionDOMStorageAdapter.prototype = {
   },
 
   /**
-   * Reads all of the objects in this table from the local storage.
+   * Reads all of the records in this table from the local storage.
    *
    * @param {Function} callback The optional callback to invoke on completion.
    */
@@ -154,16 +162,16 @@ OrionDOMStorageAdapter.prototype = {
     var cb = this.terseToVerboseCallback(callback);
     var results = [];
     var table = this.table;
-    var id, obj;
+    var id, rec;
 
     // Get the index for the table and iterate over them.
     var index = this.deserialize(this.storage[this._indexArrayName]);
 
     for (var i = 0, len = index.length; i < len; ++i) {
       id = index[i];
-      obj = this.storage.getItem(id); 
-      // Push the item (as a string) onto the results array.
-      if (obj) results.push(obj);
+      rec = this.storage.getItem(id);
+      // Push the record (as a string) onto the results array.
+      if (rec) results.push(rec);
     }
 
     // Concatenate the entire results array and deserialize.
@@ -175,9 +183,9 @@ OrionDOMStorageAdapter.prototype = {
   },
 
   /**
-   * Removes a single object from the local storage.
+   * Removes a single record from the local storage.
    *
-   * @param {String} id The ID of the object.
+   * @param {String} id The ID of the record.
    * @param {Function} callback The optional callback to invoke on completion.
    */
   remove: function(id, callback) {
@@ -197,7 +205,7 @@ OrionDOMStorageAdapter.prototype = {
   nuke: function(callback) {
     var self = this;
 
-    // Remove all of the objects.
+    // Remove all of the records.
     this.all(function(r) {
       for (var i = 0, l = r.length; i < l; i++) {
         self.remove(r[i]);
