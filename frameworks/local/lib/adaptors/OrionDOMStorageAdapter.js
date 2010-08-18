@@ -111,7 +111,7 @@ OrionDOMStorageAdapter.prototype = {
   _saveAll: function(obj, callback) {
     var table = this.table;
     var ids = obj.key;
-    var records = obj.records;
+    var records = obj.records || obj.record;
     var index = this.deserialize(this.storage[this._indexArrayName]);
     var currIndex, id;
 
