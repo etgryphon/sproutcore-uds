@@ -32,7 +32,6 @@ OrionDOMStorageAdapter.prototype = {
    * Initializes the adapter with the given options (hash).
    */
   init: function(options) {
-    var self = this;
     this.storage = this.merge(window.localStorage, options.storage);
     this.table = this.merge('field', options.table);
     this._keyPrefix = this.table + ':';
@@ -47,6 +46,7 @@ OrionDOMStorageAdapter.prototype = {
  
     // Fallback for the stupider browsers/versions.
     if (!(this.storage instanceof window.Storage)) {
+      var self = this;
       this.storage = (function () {
         // window.top.name ensures top level, and supports around 2Mb
         var data = window.top.name ? self.deserialize(window.top.name) : {};
