@@ -93,7 +93,11 @@ var LawnchairAdaptorHelpers = {
 
   // Deserialize JSON.
   deserialize: function(json) {
-    return eval('(' + json + ')');
+    if (typeof JSON != 'undefined') { 
+      return JSON.parse(json);
+    } else {
+      return eval('(' + json + ')');
+    }
   }
 };
 
