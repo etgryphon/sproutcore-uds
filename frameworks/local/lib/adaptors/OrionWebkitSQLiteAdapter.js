@@ -18,6 +18,8 @@ var OrionWebkitSQLiteAdaptor = function(options) {
 
 OrionWebkitSQLiteAdaptor.prototype = {
 
+  supportsChunkedLoads: NO,
+
   init: function(options) {
     var that = this;
     var merge = that.merge;
