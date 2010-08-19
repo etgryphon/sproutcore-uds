@@ -261,13 +261,13 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
       this.invokeLater(function() {
         ds.save({ key: ids, records: dataHashes, startIndex: startIndex, count: chunkSize },
           updateLastRetrievedAt);
-      });
+      }, 500);
 
     } else {
       this.invokeLater(function() {
         ds.save({ key: ids, records: dataHashes, startIndex: startIndex, count: chunkSize });
         me._chunkedLoad(store, recordType, dataHashes, ids, startIndex + chunkSize, ds);
-      });
+      }, 500);
     }
   },
 
