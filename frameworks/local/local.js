@@ -137,6 +137,7 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
       return ds;
     }
 
+    // Create a new datastore.
     ds = new Lawnchair({
       table: name, 
       adaptor: storageMethod,
@@ -148,6 +149,7 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
 
     // TODO: [GD/SE] Test to see if schema version is correct; if not, nuke it.
  
+    // Cache the datastore and return.
     this._dataStoreWithAdapter[name] = ds;
     return ds;
   },
@@ -169,12 +171,11 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
     var lastRetrievedAt = this.get('lastRetrievedAt');
     var lds = SCUDS.LocalDataSource.getDataStore('SCUDS.LocalDataSource');
 
+    // Set the lastRetrievedAt map on the store.
     store.set('lastRetrievedAt', lastRetrievedAt);
 
-    if (dontSave) return;
-
-    // Save lastRetrievedAt times to localStorage.
-    lds.save({ key: 'lastRetrievedAt', map: lastRetrievedAt });
+    // Save lastRetrievedAt times to local cache.
+    if (!dontSave) lds.save({ key: 'lastRetrievedAt', map: lastRetrievedAt });
   },
 
   /**
@@ -189,6 +190,7 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
     var ds;
     var me = this;
  
+    // Get all records of specified type from the local cache.
     ds = this._getDataStoreForRecordType(recordType);
     ds.all(function(records) {
       me._didFetch(store, ds, query, records, recordType);
@@ -218,6 +220,10 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
     SC.RunLoop.end();
   },
 
+  /**
+   * Called by the notifying store when multiple records are loaded outside the context of this
+   * data source.
+   */
   notifyDidLoadRecords: function(store, recordType, dataHashes, ids) {
     if (!this._isRecordTypeSupported(recordType)) return;
 
@@ -245,25 +251,36 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
     this._chunkedLoad(store, recordType, dataHashes, ids, 0, ds);
   },
 
+  /*
+   * Writes an array of record data hashes to the store in chunks to increase performance in slower
+   * browsers.
+   */
   _chunkedLoad: function(store, recordType, dataHashes, ids, startIndex, ds) {
     var chunkSize = this.get('chunkSize');
     var len = ids.length;
     var me = this;
 
+    // Checked for chunked loading support on Lawnchair adapter and whether we should even bother.
     if (!ds.adaptor.supportsChunkedLoads || len - startIndex < chunkSize) {
-      var updateLastRetrievedAt = function() {
+      var finalizeLoad = function() {
+        recTypeStr = recordType.toString();
+
         if (me.recordRetrievalTimes === YES) {
-          me.lastRetrievedAt[recordType.toString()] = SC.DateTime.create().get('milliseconds');
+          me.lastRetrievedAt[recTypeStr] = SC.DateTime.create().get('milliseconds');
           me._lastRetrievedAtDidChange(store);
         }
+
+        console.log('Wrote %@ %@ records to local cache.'.fmt(len, recTypeStr));
       };
 
+      // Final or only chunked load (execute after 500ms).
       this.invokeLater(function() {
         ds.save({ key: ids, records: dataHashes, startIndex: startIndex, count: chunkSize },
-          updateLastRetrievedAt);
+          finalizeLoad);
       }, 500);
 
     } else {
+      // First or subsequent chunked load (execute after 500ms).
       this.invokeLater(function() {
         ds.save({ key: ids, records: dataHashes, startIndex: startIndex, count: chunkSize });
         me._chunkedLoad(store, recordType, dataHashes, ids, startIndex + chunkSize, ds);
@@ -307,14 +324,22 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
     SC.RunLoop.end();
   },
   
-  //TODO: [SE, MB] only retreive records when asking for more than one
-  //otherwise call the remote data source
   retrieveRecords: function(store, storeKeys, ids) {
-    if(storeKeys && storeKeys.get('length') > 1) return this._handleEach(store, storeKeys, this.retrieveRecord, ids);  
-    else return NO;
-    //return this._handleEach(store, storeKeys, this.retrieveRecord, ids);  
+    // Only retrieve records when asking for more than one, otherwise forward to the next data
+    // source in the chain.
+    if (storeKeys && storeKeys.get('length') > 1) {
+      return this._handleEach(store, storeKeys, this.retrieveRecord, ids);  
+    } else {
+      return NO;
+    }
+
+    // return this._handleEach(store, storeKeys, this.retrieveRecord, ids);  
   },
 
+  /**
+   * Called by the notifying store when a single record is loaded outside the context of this
+   * data source.
+   */
   notifyDidLoadRecord: function(store, recordType, dataHash, id) {
     if (!this._isRecordTypeSupported(recordType)) return;
 
@@ -331,13 +356,17 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
 
     // Write the record to the local storage.
     ds.save({ key: id, record: dataHash }, function() {
+      var recTypeStr = recordType.toString();
+
       if (this.recordRetrievalTimes === YES) {
-        me.lastRetrievedAt[recordType.toString()] = SC.DateTime.create().get('milliseconds');
+        me.lastRetrievedAt[recTypeStr] = SC.DateTime.create().get('milliseconds');
         me._lastRetrievedAtDidChange(store);
       }
+
+      console.log('Wrote %@:%@ to the local cache.'.fmt(recTypeStr, id));
     });
   },
-  
+
   createRecord: function(store, storeKey) {
     if (!store) {
       console.error('Error creating record: Invalid store.');
@@ -348,29 +377,30 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
     if (!this._isRecordTypeSupported(recordType)) return NO;
 
     var id = store.idFor(storeKey);
+
+    // Don't want to create a record without a server-generated ID.
+    if ((id + '').indexOf('-') === 0) return;
+
     var ds = this._getDataStoreForRecordType(recordType);
     var dataHash = store.readDataHash(storeKey);
-
-    if ((id + '').indexOf('-') === 0) {
-      // Don't want to create a record without an ID.
-      return;
-    }
 
     ds.save({ key: id, record: dataHash });
 
     return SC.MIXED_STATE;
   },
-  
+
+  /**
+   * Called by the notifying store when a single record is created outside the context of this
+   * data source.
+   */
   notifyDidCreateRecord: function(store, recordType, dataHash, id) {
     if (!this._isRecordTypeSupported(recordType)) return;
+
+    // Don't want to create a record without a server-generated ID.
+    if ((id + '').indexOf('-') === 0) return;
     
     var ds = this._getDataStoreForRecordType(recordType);
     var storeKey = store.storeKeyFor(recordType, id);
-
-    if ((id + '').indexOf('-') === 0) {
-      // Don't want to create a record without an ID.
-      return;
-    }
 
     // Get the data from the store, to utilise the minimal-complete merge code.
     dataHash = store.readDataHash(storeKey); 
@@ -400,6 +430,10 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
     return SC.MIXED_STATE;
   },
 
+  /**
+   * Called by the notifying store when a single record is deleted outside the context of this
+   * data source.
+   */
   notifyDidDestroyRecord: function(store, recordType, dataHash, id) {
     if (!this._isRecordTypeSupported(recordType)) return;
     var ds = this._getDataStoreForRecordType(recordType);
@@ -426,6 +460,9 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
     return SC.MIXED_STATE;
   },
  
+  /**
+   * Removes all locally-cached data for the given record type.
+   */
   nuke: function(recordType) {
     var ds = this._getDataStoreForRecordType(recordType);
     ds.nuke();
