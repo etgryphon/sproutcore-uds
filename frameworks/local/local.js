@@ -88,7 +88,7 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
       ret = 'dom';
     }
 
-    console.log('Local storage mechanism: %@'.fmt(ret));
+    SC.Logger.debug('Local storage mechanism: %@'.fmt(ret));
     return ret;
 
   }.property().cacheable(),
@@ -142,8 +142,8 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
       table: name, 
       adaptor: storageMethod,
       onError: function(tx, e, msg) {
-        console.error("Lawnchair error: " + msg);
-        console.error(e);
+        SC.Logger.error("Lawnchair error: " + msg);
+        SC.Logger.error(e);
       }
     });
 
@@ -185,7 +185,7 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
     var recordType = query.get('recordType');
     if (!this._isRecordTypeSupported(recordType)) return NO;
 
-    console.log('Retrieving %@ records from local cache...'.fmt(recordType.toString()));
+    SC.Logger.log('Retrieving %@ records from local cache...'.fmt(recordType.toString()));
 
     var ds;
     var me = this;
@@ -203,7 +203,7 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
   _didFetch: function(store, source, query, records, recordType) {
     var id, data;
 
-    console.log('Found %@ cached %@ records.'.fmt(records.length, recordType.toString()));
+    SC.Logger.log('Found %@ cached %@ records.'.fmt(records.length, recordType.toString()));
 
     records.forEach(function(dataHash) {
       if (dataHash) {
@@ -270,7 +270,7 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
           me._lastRetrievedAtDidChange(store);
         }
 
-        console.log('Wrote %@ %@ records to local cache.'.fmt(len, recTypeStr));
+        SC.Logger.log('Wrote %@ %@ records to local cache.'.fmt(len, recTypeStr));
       };
 
       // Final or only chunked load (execute after 500ms).
@@ -290,7 +290,7 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
 
   retrieveRecord: function(store, storeKey, params) {
     if (!store) {
-      console.error('Error retrieving record: Invalid store.');
+      SC.Logger.error('Error retrieving record: Invalid store.');
       return NO;
     }
 
@@ -305,12 +305,12 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
 
     if (!dataHash) return NO;
 
-    console.log('Retrieving %@:%@ from local cache...'.fmt(recTypeStr, id));
+    SC.Logger.log('Retrieving %@:%@ from local cache...'.fmt(recTypeStr, id));
 
     var type = dataHash.type;
     
     ds.get(id, function(o) {
-      console.log('Found %@:%@ in local cache.'.fmt(recTypeStr, id));
+      SC.Logger.log('Found %@:%@ in local cache.'.fmt(recTypeStr, id));
       me._retrieveCompleted(store, id, o, recordType);
     });
     
@@ -363,13 +363,13 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
         me._lastRetrievedAtDidChange(store);
       }
 
-      console.log('Wrote %@:%@ to the local cache.'.fmt(recTypeStr, id));
+      SC.Logger.log('Wrote %@:%@ to the local cache.'.fmt(recTypeStr, id));
     });
   },
 
   createRecord: function(store, storeKey) {
     if (!store) {
-      console.error('Error creating record: Invalid store.');
+      SC.Logger.error('Error creating record: Invalid store.');
       return NO;
     }
 
@@ -406,13 +406,13 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
     dataHash = store.readDataHash(storeKey); 
     
     ds.save({ key: id, record: dataHash }, function() {
-      console.log('Created %@:%@ in local cache.'.fmt(recordType.toString(), id));
+      SC.Logger.log('Created %@:%@ in local cache.'.fmt(recordType.toString(), id));
     });
   },
   
   destroyRecord: function(store, storeKey, params) {
     if (!store) {
-      console.error('Error destroying record: Invalid store.');
+      SC.Logger.error('Error destroying record: Invalid store.');
       return NO;
     }
 
@@ -424,7 +424,7 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
     var type = store.readDataHash(storeKey).type;
 
     ds.remove(id, function() {
-      console.log('Destroyed %@:%@ in local cache.'.fmt(recordType.toString(), id));
+      SC.Logger.log('Destroyed %@:%@ in local cache.'.fmt(recordType.toString(), id));
     });
     
     return SC.MIXED_STATE;
@@ -442,7 +442,7 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
   
   updateRecord: function(store, storeKey, params) {
     if (!store) {
-      console.error('Error creating record: Invalid store.');
+      SC.Logger.error('Error creating record: Invalid store.');
       return NO;
     }
 
@@ -454,7 +454,7 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
     var dataHash = store.readDataHash(storeKey);
 
     ds.save({ key: id, record: dataHash }, function() {
-      console.log('Updated %@:%@ in local cache.'.fmt(recordType.toString(), id));
+      SC.Logger.log('Updated %@:%@ in local cache.'.fmt(recordType.toString(), id));
     });
 
     return SC.MIXED_STATE;
@@ -497,8 +497,8 @@ SCUDS.LocalDataSource.getDataStore = function(storeName) {
     table: storeName,
     adaptor: storageMethod,
     onError: function(tx, e, msg) {
-      console.error("Lawnchair error: " + msg);
-      console.error(e);
+      SC.Logger.error("Lawnchair error: " + msg);
+      SC.Logger.error(e);
     }
   });
 
@@ -509,7 +509,7 @@ SCUDS.LocalDataSource.getDataStore = function(storeName) {
 SCUDS.LocalDataSource.clearAll = function(callback) {
   // TODO: [GD] Make this not just for localStorage in ablove changes.
   // localStorage.clear();
-  // console.log('Cleared local data cache.');
+  // SC.Logger.log('Cleared local data cache.');
   // if (SC.typeOf(callback) === SC.T_FUNCTION) callback();
 };
 
