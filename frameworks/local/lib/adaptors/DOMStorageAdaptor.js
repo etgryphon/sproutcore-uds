@@ -73,7 +73,6 @@ DOMStorageAdaptor.prototype = {
   },
 
   all: function(callback) {
-    var allStart = new Date().getTime(), elapsedDeserialize = 0, elapsedGetItem = 0, temp;
     var cb = this.terseToVerboseCallback(callback);
     var results = [];
     var table = this.table;
@@ -88,20 +87,13 @@ DOMStorageAdaptor.prototype = {
       idTokens = id.split(':');
 
       if (this.table === idTokens[0]) {
-        temp = new Date().getTime();
         item = this.storage.getItem(id); 
-        elapsedGetItem += new Date().getTime() - temp;
-        temp = new Date().getTime();
         obj = this.deserialize(item);
-        elapsedDeserialize += new Date().getTime() - temp;
         obj.key = idTokens[1];
         results.push(obj);
       }
     }
 
-    console.log('Lawnchair: Elapsed time in all(): %@ms'.fmt(new Date().getTime() - allStart));
-    console.log('Lawnchair: Elapsed time in getItem(): %@ms'.fmt(elapsedGetItem));
-    console.log('Lawnchair: Elapsed time in deserialize(): %@ms'.fmt(elapsedDeserialize));
     if (cb) cb(results);
   },
 
