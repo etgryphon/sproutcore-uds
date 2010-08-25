@@ -412,7 +412,7 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
   
   destroyRecord: function(store, storeKey, params) {
     if (!store) {
-      SC.Logger.error('Error destroying record: Invalid store.');
+      SC.Logger.error('Error deleting record: Invalid store.');
       return NO;
     }
 
@@ -424,7 +424,7 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
     var type = store.readDataHash(storeKey).type;
 
     ds.remove(id, function() {
-      SC.Logger.log('Destroyed %@:%@ in local cache.'.fmt(recordType.toString(), id));
+      SC.Logger.log('Deleted %@:%@ in local cache.'.fmt(recordType.toString(), id));
     });
     
     return SC.MIXED_STATE;
