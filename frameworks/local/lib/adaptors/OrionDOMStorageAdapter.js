@@ -227,10 +227,10 @@ OrionDOMStorageAdapter.prototype = {
 
       // Remove the index array.
       self.remove(self._indexArrayName);
-
-      // Invoke the callback.
-      if (callback) callback();
     });
+
+    // Invoke the callback.
+    if (callback) callback();
   }
 };
 
