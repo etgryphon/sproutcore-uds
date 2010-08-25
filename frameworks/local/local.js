@@ -121,7 +121,7 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
   /*
    * A list of cached datastores (mostly keyed by record type).
    */
-  _dataStoreWithAdapter: {},
+  _datastores: {},
 
   /*
    * Returns a specific named datastore.
@@ -130,7 +130,7 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
     if (SC.empty(name)) return null;
 
     var storageMethod = this.get('storageMethod');
-    var ds = this._dataStoreWithAdapter[name];
+    var ds = this._datastores[name];
 
     if (ds) {
       // Found cached datastore; return.
@@ -150,7 +150,7 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
     // TODO: [GD/SE] Test to see if schema version is correct; if not, nuke it.
  
     // Cache the datastore and return.
-    this._dataStoreWithAdapter[name] = ds;
+    this._datastores[name] = ds;
     return ds;
   },
 
@@ -463,9 +463,27 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
   /**
    * Removes all locally-cached data for the given record type.
    */
-  nuke: function(recordType) {
+  nukeType: function(recordType) {
     var ds = this._getDataStoreForRecordType(recordType);
     ds.nuke();
+  },
+
+  /**
+   * Removes all locally-cached data (all record types).
+   */
+  nuke: function() {
+    // Nuke each datastore.
+    var stores = this._datastores;
+    if (SC.typeOf(stores) !== SC.T_HASH) return;
+
+    for (var name in stores) {
+      if (stores[name] && stores[name].nuke) stores[name].nuke();
+    }
+
+    // Reset the data structure.
+    this._datastores = {};
+
+    SC.Logger.log('Cleared all data in local cache.');
   },
  
   _supportsSqlStorage: function() {
@@ -482,13 +500,13 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
 });
 
 // Class-level datastores.
-SCUDS.LocalDataSource.dataStoreWithAdapter = {};
+SCUDS.LocalDataSource.datastores = {};
 
 /**
  * Returns a class-level datastore.
  */
 SCUDS.LocalDataSource.getDataStore = function(storeName) {
-  var ds = SCUDS.LocalDataSource.dataStoreWithAdapter[storeName];
+  var ds = SCUDS.LocalDataSource.datastores[storeName];
   var storageMethod = 'dom';
 
   if (ds) return ds;
@@ -502,15 +520,29 @@ SCUDS.LocalDataSource.getDataStore = function(storeName) {
     }
   });
 
-  SCUDS.LocalDataSource.dataStoreWithAdapter[storeName] = ds;
+  SCUDS.LocalDataSource.datastores[storeName] = ds;
   return ds;
 };
 
+/**
+ * Clears all class-level datastores.
+ */
 SCUDS.LocalDataSource.clearAll = function(callback) {
-  // TODO: [GD] Make this not just for localStorage in ablove changes.
-  // localStorage.clear();
-  // SC.Logger.log('Cleared local data cache.');
-  // if (SC.typeOf(callback) === SC.T_FUNCTION) callback();
+  // Nuke each class-level datastore.
+  var stores = SCUDS.LocalDataSource.datastores;
+  if (SC.typeOf(stores) !== SC.T_HASH) return;
+
+  for (var name in stores) {
+    if (stores[name] && stores[name].nuke) stores[name].nuke();
+  }
+
+  // Reset the data structure.
+  SCUDS.LocalDataSource.datastores = {};
+
+  SC.Logger.log('Cleared class-level datastores.');
+
+  // Invoke the callback.
+  if (SC.typeOf(callback) === SC.T_FUNCTION) callback();
 };
 
 Object.size = function(obj) {
