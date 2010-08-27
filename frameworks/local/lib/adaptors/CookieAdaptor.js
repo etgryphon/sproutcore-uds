@@ -1,3 +1,4 @@
+/*globals LawnchairAdaptorHelpers*/
 /**
  * CookieAdaptor
  * ===================
@@ -32,8 +33,8 @@ CookieAdaptor.prototype = {
 			var len = ca.length;
 			for (var i=0; i < len; i++) {
 				var c = ca[i];
-				while (c.charAt(0)==' ') c = c.substring(1,c.length);
-				if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length,c.length);
+				while (c.charAt(0)===' ') c = c.substring(1,c.length);
+				if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length,c.length);
 			}
 			return null;
 		};
@@ -47,8 +48,7 @@ CookieAdaptor.prototype = {
 		var id = obj.key || this.uuid();
 		delete obj.key;
 		this.createCookie(id, this.serialize(obj), 365);
-		if (callback)
-			callback(obj);
+		if (callback) callback(obj);
 	},
 	all:function(callback){
 		var cb = this.terseToVerboseCallback(callback);
@@ -66,21 +66,18 @@ CookieAdaptor.prototype = {
 				yar.push(o);
 			}
 		}
-		if (cb)
-			cb(yar);
+		if (cb)	cb(yar);
 	},
 	remove:function(keyOrObj, callback) {
-		var key = (typeof keyOrObj == 'string') ? keyOrObj : keyOrObj.key;
+		var key = (typeof keyOrObj === 'string') ? keyOrObj : keyOrObj.key;
 		this.createCookie(key, '', -1);
-		if(callback)
-		  callback();
+		if(callback) callback();
 	},
 	nuke:function(nuke, callback) {
 		var that = this;
 		this.all(function(r){
 			for (var i = 0, l = r.length; i < l; i++) {
-				if (r[i].key)
-					that.remove(r[i].key);
+				if (r[i].key)	that.remove(r[i].key);
 			}
 		}, callback);
 	}

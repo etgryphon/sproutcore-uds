@@ -1,3 +1,4 @@
+/*globals SCUDS*/
 /**
  * NotifyingStore will notify the data source (usually SCUDS.NotifyingCascadeDataSource)
  * of any changes that should be bubbled through all data sources.

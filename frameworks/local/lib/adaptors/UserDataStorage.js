@@ -1,3 +1,4 @@
+/*globals LawnchairAdaptorHelpers*/
 /**
  * UserDataAdaptor
  * ===================
@@ -25,8 +26,7 @@ UserDataAdaptor.prototype = {
 		var obj = this.deserialize(this.storage[key]);
 	        if (obj) {
 	            obj.key = key;
-	            if (callback)
-	                callback(obj);
+	            if (callback) callback(obj);
 	        }
 	},
 	save:function(obj, callback){
@@ -34,8 +34,7 @@ UserDataAdaptor.prototype = {
 	        delete obj.key;
 		this.storage[id] = this.serialize(obj);
 		this.storage.save('lawnchair');
-		if (callback)
-			callback(obj);
+		if (callback) callback(obj);
 	},
 	all:function(callback){
 		var cb = this.terseToVerboseCallback(callback);
@@ -51,11 +50,10 @@ UserDataAdaptor.prototype = {
 				yar.push(o);
 			}
 		}
-		if (cb)
-			cb(yar);
+		if (cb) cb(yar);
 	},
 	remove:function(keyOrObj) {
-		var key = (typeof keyOrObj == 'string') ? keyOrObj : keyOrObj.key;
+		var key = (typeof keyOrObj === 'string') ? keyOrObj : keyOrObj.key;
 		this.storage.removeAttribute(key);
 		this.storage.save('lawnchair');
 	}, 
@@ -63,8 +61,7 @@ UserDataAdaptor.prototype = {
 		var that = this;
 		this.all(function(r){
 			for (var i = 0, l = r.length; i < l; i++) {
-				if (r[i].key)
-					that.remove(r[i].key);
+				if (r[i].key)	that.remove(r[i].key);
 			}
 		});
 	}

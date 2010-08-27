@@ -1,3 +1,4 @@
+/*globals LawnchairAdaptorHelpers*/
 /**
  * WebkitSQLiteAdaptor
  * ===================
@@ -16,7 +17,7 @@ WebkitSQLiteAdaptor.prototype = {
 	init:function(options) {
 		var that = this;
 		var merge = that.merge;
-		var opts = (typeof arguments[0] == 'string') ? {table:options} : options;
+		var opts = (typeof arguments[0] === 'string') ? {table:options} : options;
 
 		// default properties
 		this.name		= merge('Lawnchair', opts.name	  	);
@@ -35,8 +36,7 @@ WebkitSQLiteAdaptor.prototype = {
 		}
 
 		// error out on shit browsers
-		if (!window.openDatabase)
-			throw('Lawnchair, "This browser does not support sqlite storage."');
+		if (!window.openDatabase)	throw('Lawnchair, "This browser does not support sqlite storage."');
 
 		// instantiate the store
 		this.db = openDatabase(this.name, this.version, this.display, this.max);
@@ -59,7 +59,7 @@ WebkitSQLiteAdaptor.prototype = {
 					"UPDATE " + that.table + " SET value=?, timestamp=? WHERE id=?",
 					[that.serialize(obj), that.now(), id],
 					function() {
-						if (callback != undefined) {
+						if (callback !== undefined) {
 							obj.key = id;
 							callback(obj);
 						}
@@ -70,13 +70,13 @@ WebkitSQLiteAdaptor.prototype = {
 		};
 		var insert = function(obj, callback) {
 			that.db.transaction(function(t) {
-				var id = (obj.key == undefined) ? that.uuid() : obj.key;
+				var id = (obj.key === undefined) ? that.uuid() : obj.key;
 				delete(obj.key);
 				t.executeSql(
 					"INSERT INTO " + that.table + " (id, value,timestamp) VALUES (?,?,?)",
 					[id, that.serialize(obj), that.now()],
 					function() {
-						if (callback != undefined) {
+						if (callback !== undefined) {
 							obj.key = id;
 							callback(obj);
 						}
@@ -85,11 +85,11 @@ WebkitSQLiteAdaptor.prototype = {
 				);
 			});
 		};
-		if (obj.key == undefined) {
+		if (obj.key === undefined) {
 			insert(obj, callback);
 		} else {
 			this.get(obj.key, function(r) {
-				var isUpdate = (r != null);
+				var isUpdate = (r !== null);
 	
 				if (isUpdate) {
 					var id = obj.key;
@@ -108,7 +108,7 @@ WebkitSQLiteAdaptor.prototype = {
 				"SELECT value FROM " + that.table + " WHERE id = ?",
 				[key],
 				function(tx, results) {
-					if (results.rows.length == 0) {
+					if (results.rows.length === 0) {
 						callback(null);
 					} else {
 						var o = that.deserialize(results.rows.item(0).value);
@@ -125,7 +125,7 @@ WebkitSQLiteAdaptor.prototype = {
 		var that = this;
 		this.db.transaction(function(t) {
 			t.executeSql("SELECT * FROM " + that.table, [], function(tx, results) {
-				if (results.rows.length == 0 ) {
+				if (results.rows.length === 0 ) {
 					cb([]);
 				} else {
 					var r = [];
@@ -146,7 +146,7 @@ WebkitSQLiteAdaptor.prototype = {
 		this.db.transaction(function(t) {
 			t.executeSql(
 				"DELETE FROM " + that.table + " WHERE id = ?",
-				[(typeof keyOrObj == 'string') ? keyOrObj : keyOrObj.key],
+				[(typeof keyOrObj === 'string') ? keyOrObj : keyOrObj.key],
 				callback || that.onData,
 				that.onError
 			);

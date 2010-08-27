@@ -1,3 +1,4 @@
+/*globals LawnchairAdaptorHelpers*/
 /**
  * OrionDOMStorageAdapter
  *

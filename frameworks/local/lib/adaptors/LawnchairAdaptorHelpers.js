@@ -7,14 +7,14 @@
 var LawnchairAdaptorHelpers = {
 	// merging default properties with user defined args
 	merge: function(defaultOption, userOption) {
-		return (userOption == undefined || userOption == null) ? defaultOption: userOption;
+		return (userOption === undefined || userOption === null) ? defaultOption: userOption;
 	},
 
 	// awesome shorthand callbacks as strings. this is shameless theft from dojo.
 	terseToVerboseCallback: function(callback) {
-		return (typeof arguments[0] == 'string') ?
+		return (typeof arguments[0] === 'string') ?
 		function(r, i) {
-			eval(callback)
+			eval(callback);
 		}: callback;
 	},
 
@@ -25,13 +25,14 @@ var LawnchairAdaptorHelpers = {
 
 	// Returns a unique identifier
 	uuid: function(len, radix) {
+	  var i;
 		// based on Robert Kieffer's randomUUID.js at http://www.broofa.com
 		var chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'.split('');
 		var uuid = [];
 		radix = radix || chars.length;
 
 		if (len) {
-			for (var i = 0; i < len; i++) uuid[i] = chars[0 | Math.random() * radix];
+			for (i = 0; i < len; i++) uuid[i] = chars[0 | Math.random() * radix];
 		} else {
 			// rfc4122, version 4 form
 			var r;
@@ -42,10 +43,10 @@ var LawnchairAdaptorHelpers = {
 
 			// Fill in random data.  At i==19 set the high bits of clock sequence as
 			// per rfc4122, sec. 4.1.5
-			for (var i = 0; i < 36; i++) {
+			for (i = 0; i < 36; i++) {
 				if (!uuid[i]) {
 					r = 0 | Math.random() * 16;
-					uuid[i] = chars[(i == 19) ? (r & 0x3) | 0x8: r];
+					uuid[i] = chars[(i === 19) ? (r & 0x3) | 0x8: r];
 				}
 			}
 		}
@@ -56,28 +57,28 @@ var LawnchairAdaptorHelpers = {
 	serialize: function(obj) {
 		var r = '';
 
-		if (typeof JSON != 'undefined') {
+		if (typeof JSON !== 'undefined') {
 			r = JSON.stringify(obj);
 		} else {
 			// Art Haedike: 21 Dec 2009
 			// Pieced this together from some of the open libraries...handles recursion.  More robust.
 			var t = typeof(obj);
-			if (t != "object" || obj === null) {
+			if (t !== "object" || obj === null) {
 				// simple data type
-				if (t == "string") obj = '"' + obj + '"';
+				if (t === "string") obj = '"' + obj + '"';
 				r = String(obj);
 			} else {
 				// recurse array or object
 				var n,
 				v,
 				json = [],
-				arr = (obj && obj.constructor == Array);
+				arr = (obj && obj.constructor === Array);
 				for (n in obj) {
 					v = obj[n];
 					t = typeof(v);
-					if (t == "string") {
+					if (t === "string") {
 						v = '"' + v + '"';
-					} else if (t == "object" && v !== null) {
+					} else if (t === "object" && v !== null) {
 						//recursion starts here
 						v = this.serialize(v);
 					}
