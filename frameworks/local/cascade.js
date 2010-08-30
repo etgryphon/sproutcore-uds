@@ -30,7 +30,6 @@ SCUDS.NotifyingCascadeDataSource = SC.CascadeDataSource.extend({
   notifyDidLoadRecord: function(store, recordType, dataHash, id) {
     var toNotify = this.wantsNotification;
     var pk;
-
     recordType = recordType || SC.Record;
 
     if (!id) {
@@ -44,12 +43,11 @@ SCUDS.NotifyingCascadeDataSource = SC.CascadeDataSource.extend({
   },
  
   /**
-   * Called when a single record is created in the store.
+   * Called when a single record is created or updated in the store.
    */
-  notifyDidCreateRecord: function(store, recordType, dataHash, id) {
+  notifyDidWriteRecord: function(store, recordType, dataHash, id) {
     var toNotify = this.wantsNotification;
     var pk;
-
     recordType = recordType || SC.Record;
 
     if (!id) {
@@ -58,7 +56,19 @@ SCUDS.NotifyingCascadeDataSource = SC.CascadeDataSource.extend({
     }
 
     toNotify.forEach(function(source) {
-      source.notifyDidCreateRecord(store, recordType, dataHash, id);
+      source.notifyDidWriteRecord(store, recordType, dataHash, id);
+    });
+  },
+
+  /**
+   * Called when a single record is destroyed in the store.
+   */
+  notifyDidDestroyRecord: function(store, recordType, id) {
+    var toNotify = this.wantsNotification;
+    recordType = recordType || SC.Record;
+
+    toNotify.forEach(function(source) {
+      source.notifyDidDestroyRecord(store, recordType, id);
     });
   },
 

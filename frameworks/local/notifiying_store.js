@@ -61,12 +61,9 @@ SCUDS.NotifyingStore = SC.Store.extend({
     var dataSource = this._getDataSource();
 
     if (dataHash.status === "deleted") {
-      // TODO: Is this the best way to do this?
       SC.RunLoop.begin();
       this.pushDestroy(recordType, id);
       SC.RunLoop.end();
-
-      dataSource.notifyDidDestroyRecord(this, recordType, dataHash, id);
       return null;
     }
 
@@ -80,21 +77,57 @@ SCUDS.NotifyingStore = SC.Store.extend({
   },
 
   /**
-   * Overrides createRecord() to notify the data source on completion.
+   * Overrides dataSourceDidComplete() to accept an optional notify parameter.
    */
-  createRecord: function(recordType, dataHash, id) {
-    var ret = sc_super();
-    var dataSource = this._getDataSource();
+  dataSourceDidComplete: function(storeKey, dataHash, newId, notify) {
+    var status = this.readStatus(storeKey), K = SC.Record, statusOnly;
 
-    if (dataSource.wantsNotification) {
-      var primaryKey = recordType.prototype.primaryKey;
-      var storeKey = ret.get('storeKey');
-      id = ret.get(primaryKey);
-      dataHash = this.readDataHash(storeKey);
-      dataSource.notifyDidCreateRecord(this, recordType, dataHash, id);
+    if (!(status & K.BUSY) || status === K.BUSY_DESTROYING) {
+      throw K.BAD_STATE_ERROR;
+    } else status = K.READY_CLEAN;
+
+    this.writeStatus(storeKey, status);
+    if (newId) SC.Store.replaceIdFor(storeKey, newId);
+    if (dataHash) this.writeDataHash(storeKey, dataHash, status, notify);
+
+    statusOnly = dataHash || newId ? NO : YES;
+    this.dataHashDidChange(storeKey, null, statusOnly);
+
+    return this;
+  },
+
+  /**
+   * Overrides writeDataHash() to accept an optional notify parameter and notify the data source on
+   * completion if YES.
+   */
+  writeDataHash: function(storeKey, dataHash, status, notify) {
+    var ret = sc_super();
+
+    if (notify === YES) {
+      var ds = this._getDataSource();
+      if (ds.wantsNotification) {
+        var id = this.idFor(storeKey);
+        var recordType = this.recordTypeFor(storeKey);
+        ds.notifyDidWriteRecord(this, recordType, dataHash, id);
+      }
     }
 
     return ret;
+  },
+
+  /**
+   * Overrides removeDataHash() to notify the data source on completion.
+   */
+  removeDataHash: function(storeKey, status) {
+    var ds = this._getDataSource();
+
+    if (ds.wantsNotification) {
+      var id = this.idFor(storeKey);
+      var recordType = this.recordTypeFor(storeKey);
+      ds.notifyDidDestroyRecord(this, recordType, id);
+    }
+
+    return sc_super();
   }
 });
 

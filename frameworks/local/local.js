@@ -343,10 +343,6 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
   notifyDidLoadRecord: function(store, recordType, dataHash, id) {
     if (!this._isRecordTypeSupported(recordType)) return;
 
-    // NOTE: [SE] Pretty sure we don't actually need this, because only new records created locally
-    // will have a negative ID, and they're not written to the store with loadRecord().
-    // if ((id + '').indexOf('-') === 0) return;
-
     var ds = this._getDataStoreForRecordType(recordType);
     var storeKey = store.storeKeyFor(recordType, id);
     var me = this;
@@ -363,103 +359,38 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
         me._lastRetrievedAtDidChange(store);
       }
 
-      SC.Logger.log('Wrote %@:%@ to the local cache.'.fmt(recTypeStr, id));
+      SC.Logger.log('Wrote %@:%@ to local cache.'.fmt(recTypeStr, id));
     });
-  },
-
-  createRecord: function(store, storeKey) {
-    if (!store) {
-      SC.Logger.error('Error creating record: Invalid store.');
-      return NO;
-    }
-
-    var recordType = store.recordTypeFor(storeKey);
-    if (!this._isRecordTypeSupported(recordType)) return NO;
-
-    var id = store.idFor(storeKey);
-
-    // Don't want to create a record without a server-generated ID.
-    if ((id + '').indexOf('-') === 0) return;
-
-    var ds = this._getDataStoreForRecordType(recordType);
-    var dataHash = store.readDataHash(storeKey);
-
-    ds.save({ key: id, record: dataHash });
-
-    return SC.MIXED_STATE;
   },
 
   /**
-   * Called by the notifying store when a single record is created outside the context of this
-   * data source.
+   * Called by the notifying store when a single record is written to the store outside the context
+   * of this data source.
    */
-  notifyDidCreateRecord: function(store, recordType, dataHash, id) {
+  notifyDidWriteRecord: function(store, recordType, dataHash, id) {
     if (!this._isRecordTypeSupported(recordType)) return;
 
-    // Don't want to create a record without a server-generated ID.
-    if ((id + '').indexOf('-') === 0) return;
-    
     var ds = this._getDataStoreForRecordType(recordType);
     var storeKey = store.storeKeyFor(recordType, id);
 
-    // Get the data from the store, to utilise the minimal-complete merge code.
-    dataHash = store.readDataHash(storeKey); 
-    
     ds.save({ key: id, record: dataHash }, function() {
-      SC.Logger.log('Created %@:%@ in local cache.'.fmt(recordType.toString(), id));
+      SC.Logger.log('Wrote %@:%@ to local cache.'.fmt(recordType.toString(), id));
     });
   },
   
-  destroyRecord: function(store, storeKey, params) {
-    if (!store) {
-      SC.Logger.error('Error deleting record: Invalid store.');
-      return NO;
-    }
-
-    var recordType = store.recordTypeFor(storeKey);
-    if (!this._isRecordTypeSupported(recordType)) return NO;
-
-    var id = store.idFor(storeKey);
-    var ds = this._getDataStoreForRecordType(recordType);
-    var type = store.readDataHash(storeKey).type;
-
-    ds.remove(id, function() {
-      SC.Logger.log('Deleted %@:%@ in local cache.'.fmt(recordType.toString(), id));
-    });
-    
-    return SC.MIXED_STATE;
-  },
-
   /**
    * Called by the notifying store when a single record is deleted outside the context of this
    * data source.
    */
-  notifyDidDestroyRecord: function(store, recordType, dataHash, id) {
+  notifyDidDestroyRecord: function(store, recordType, id) {
     if (!this._isRecordTypeSupported(recordType)) return;
     var ds = this._getDataStoreForRecordType(recordType);
-    ds.remove(id);
-  },
-  
-  updateRecord: function(store, storeKey, params) {
-    if (!store) {
-      SC.Logger.error('Error creating record: Invalid store.');
-      return NO;
-    }
 
-    var recordType = store.recordTypeFor(storeKey);
-    if (!this._isRecordTypeSupported(recordType)) return NO;
-
-    var id = store.idFor(storeKey);
-    var ds = this._getDataStoreForRecordType(recordType);
-    var dataHash = store.readDataHash(storeKey);
-
-    ds.save({ key: id, record: dataHash }, function() {
-      SC.Logger.log('Updated %@:%@ in local cache.'.fmt(recordType.toString(), id));
+    ds.remove(id, function() {
+      SC.Logger.log('Deleted %@:%@ from local cache.'.fmt(recordType.toString(), id));
     });
-
-    return SC.MIXED_STATE;
   },
- 
+
   /**
    * Removes all locally-cached data for the given record type.
    */
