@@ -58,19 +58,24 @@ SCUDS.NotifyingStore = SC.Store.extend({
    * Overrides loadRecord() to notifiy the data source on completion.
    */
   loadRecord: function(recordType, dataHash, id, ignoreNotify) {
-    var dataSource = this._getDataSource();
+    if (dataHash.status && dataHash.status === "deleted") {
+      var sk = this.storeKeyExists(recordType, id);
+      if (!SC.none(sk)) {
+        SC.RunLoop.begin();
+        this.pushDestroy(recordType, id, sk);
+        SC.RunLoop.end();
+      }
 
-    if (dataHash.status === "deleted") {
-      SC.RunLoop.begin();
-      this.pushDestroy(recordType, id);
-      SC.RunLoop.end();
       return null;
     }
 
     var ret = sc_super();
 
-    if (ignoreNotify !== YES && dataSource.wantsNotification) {
-      dataSource.notifyDidLoadRecord(this, recordType, dataHash, id);
+    if (ignoreNotify !== YES) {
+      var dataSource = this._getDataSource();
+      if (dataSource.wantsNotification) {
+        dataSource.notifyDidLoadRecord(this, recordType, dataHash, id);
+      }
     }
 
     return ret;
