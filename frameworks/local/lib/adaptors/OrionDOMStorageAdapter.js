@@ -27,6 +27,7 @@ OrionDOMStorageAdapter.prototype = {
 
   supportsChunkedLoads: YES,
   _indexArrayName: null,
+  _indexArray: null,
   _keyPrefix: null,
 
   /**
@@ -40,10 +41,13 @@ OrionDOMStorageAdapter.prototype = {
     // Initialize the index table.
     this._indexArrayName = this._keyPrefix + 'index';
     var indexArray = this.deserialize(this.storage.getItem(this._indexArrayName));
+
     if (!indexArray) {
       indexArray = [];
       this.storage.setItem(this._indexArrayName, this.serialize(indexArray));
     }
+
+    this._indexArray = indexArray;
  
     // Fallback for the stupider browsers/versions.
     if (!(this.storage instanceof window.Storage)) {
@@ -89,7 +93,7 @@ OrionDOMStorageAdapter.prototype = {
     }
 
     // Store the ID of the record in the index array.
-    var index = this.deserialize(this.storage[this._indexArrayName]);
+    var index = this._indexArray;
     var id = this._keyPrefix + (key || this.uuid());
     var currIndex = index.indexOf(id);
 
@@ -121,7 +125,7 @@ OrionDOMStorageAdapter.prototype = {
     var count = obj.count;
     var len = ids.length;
     var endAt = count ? (len - startAt > count ? startAt + count : len) : len;
-    var index = this.deserialize(this.storage[this._indexArrayName]);
+    var index = this._indexArray;
     var currIndex, id;
 
     for (var i = startAt; i < endAt; i++) {
@@ -169,7 +173,7 @@ OrionDOMStorageAdapter.prototype = {
     var id, rec;
 
     // Get the index for the table and iterate over them.
-    var index = this.deserialize(this.storage[this._indexArrayName]);
+    var index = this._indexArray;
 
     for (var i = 0, len = index.length; i < len; ++i) {
       id = index[i];
@@ -200,7 +204,7 @@ OrionDOMStorageAdapter.prototype = {
     this.storage.removeItem(key);
 
     // Remove the ID from the index array.
-    var index = this.deserialize(this.storage[this._indexArrayName]);
+    var index = this._indexArray;
     var currIndex = index.indexOf(key);
     if (currIndex >= 0) {
       index.pop(currIndex);
@@ -227,6 +231,7 @@ OrionDOMStorageAdapter.prototype = {
 
       // Remove the index array.
       self.remove(self._indexArrayName);
+      this._indexArray = [];
     });
 
     // Invoke the callback.
