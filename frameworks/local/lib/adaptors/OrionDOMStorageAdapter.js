@@ -40,15 +40,8 @@ OrionDOMStorageAdapter.prototype = {
 
     // Initialize the index table.
     this._indexArrayName = this._keyPrefix + 'index';
-    var indexArray = this.deserialize(this.storage.getItem(this._indexArrayName));
+    this._indexArray = this.deserialize(this.storage.getItem(this._indexArrayName)) || [];
 
-    if (!indexArray) {
-      indexArray = [];
-      this.storage.setItem(this._indexArrayName, this.serialize(indexArray));
-    }
-
-    this._indexArray = indexArray;
- 
     // Fallback for the stupider browsers/versions.
     if (!(this.storage instanceof window.Storage)) {
       var self = this;
