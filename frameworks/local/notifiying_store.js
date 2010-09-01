@@ -45,10 +45,13 @@ SCUDS.NotifyingStore = SC.Store.extend({
       if (storeKey) ret.push(storeKey);
     }
 
-    var ds = this._getDataSource();
+    // Notify the data source, but only if there actually were records to load.
+    if (len > 0) {
+      var ds = this._getDataSource();
 
-    if (ds.wantsNotification) {
-      ds.notifyDidLoadRecords(this, recordType, dataHashes, ids);
+      if (ds.wantsNotification) {
+        ds.notifyDidLoadRecords(this, recordType, dataHashes, ids);
+      }
     }
 
     return ret;

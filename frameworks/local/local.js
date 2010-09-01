@@ -227,9 +227,13 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
   notifyDidLoadRecords: function(store, recordType, dataHashes, ids) {
     if (!this._isRecordTypeSupported(recordType)) return;
 
+    var len = (dataHashes && dataHashes.length) ? dataHashes.length : 0;
+
+    // Short circuit if there's nothing to load.
+    if (len === 0) return;
+
     var me = this;
     var ds = this._getDataStoreForRecordType(recordType);
-    var len = (dataHashes && dataHashes.length) ? dataHashes.length : 0;
     var pk = recordType.prototype.primaryKey;
     var sk, id;
 
