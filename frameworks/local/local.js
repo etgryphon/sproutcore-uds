@@ -25,7 +25,7 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
     sc_super();
 
     // Get the GUID -> type map (from metadata in local storage).
-    var ldsStore = this._getDataStore('SCUDS.LocalDataSource');
+    var ldsStore = SCUDS.LocalDataSource.getDataStore('SCUDS.LocalDataSource');
     var me = this;
 
     ldsStore.get('guids', function(value) {
@@ -172,6 +172,9 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
 
     var ds;
     var me = this;
+
+    // Let others know that this query was handled by the LDS.
+    query.set('handledByLDS', YES);
  
     // Get all records of specified type from the local cache.
     ds = this._getDataStoreForRecordType(recordType);
