@@ -15,7 +15,6 @@ sc_require('lib/Lawnchair');
 SCUDS.LocalDataSource = SC.DataSource.extend({
 
   wantsNotification: YES,
-  recordRetrievalTimes: YES,
   isTesting: NO,
   chunkSize: 200,
 
@@ -25,8 +24,8 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
   init: function() {
     sc_super();
 
-    // Get the GUID -> type map (from metadata in local DOM storage).
-    var ldsStore = SCUDS.LocalDataSource.getDataStore('SCUDS.LocalDataSource');
+    // Get the GUID -> type map (from metadata in local storage).
+    var ldsStore = this._getDataStore('SCUDS.LocalDataSource');
     var me = this;
 
     ldsStore.get('guids', function(value) {
@@ -163,22 +162,6 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
   },
 
   /**
-   * A hash of timestamps for the lastRetrievedAt time for each record type.
-   */
-  lastRetrievedAt: {},
-
-  _lastRetrievedAtDidChange: function(store, dontSave) {
-    var lastRetrievedAt = this.get('lastRetrievedAt');
-    var lds = SCUDS.LocalDataSource.getDataStore('SCUDS.LocalDataSource');
-
-    // Set the lastRetrievedAt map on the store.
-    store.set('lastRetrievedAt', lastRetrievedAt);
-
-    // Save lastRetrievedAt times to local cache.
-    if (!dontSave) lds.save({ key: 'lastRetrievedAt', map: lastRetrievedAt });
-  },
-
-  /**
    * Called on behalf of store.find(query)
    */
   fetch: function(store, query) {
@@ -267,14 +250,7 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
     // Checked for chunked loading support on Lawnchair adapter and whether we should even bother.
     if (!ds.adaptor.supportsChunkedLoads || len - startIndex < chunkSize) {
       var finalizeLoad = function() {
-        recTypeStr = recordType.toString();
-
-        if (me.recordRetrievalTimes === YES) {
-          me.lastRetrievedAt[recTypeStr] = SC.DateTime.create().get('milliseconds');
-          me._lastRetrievedAtDidChange(store);
-        }
-
-        SC.Logger.log('Wrote %@ %@ records to local cache.'.fmt(len, recTypeStr));
+        SC.Logger.log('Wrote %@ %@ records to local cache.'.fmt(len, recordType.toString()));
       };
 
       // Final or only chunked load (execute after 500ms).
@@ -356,14 +332,7 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
 
     // Write the record to the local storage.
     ds.save({ key: id, record: dataHash }, function() {
-      var recTypeStr = recordType.toString();
-
-      if (this.recordRetrievalTimes === YES) {
-        me.lastRetrievedAt[recTypeStr] = SC.DateTime.create().get('milliseconds');
-        me._lastRetrievedAtDidChange(store);
-      }
-
-      SC.Logger.log('Wrote %@:%@ to local cache.'.fmt(recTypeStr, id));
+      SC.Logger.log('Wrote %@:%@ to local cache.'.fmt(recordType.toString(), id));
     });
   },
 

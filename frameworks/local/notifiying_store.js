@@ -1,4 +1,5 @@
 /*globals SCUDS*/
+
 /**
  * NotifyingStore will notify the data source (usually SCUDS.NotifyingCascadeDataSource)
  * of any changes that should be bubbled through all data sources.
@@ -7,11 +8,6 @@
  * @author Sean Eidemiller
  */
 SCUDS.NotifyingStore = SC.Store.extend({
-
-  /**
-   * A hash of timestamps for the lastRetrievedAt time for each record type.
-   */
-  lastRetrievedAt: {},
 
   /**
    * Overrides loadRecords() because we want it to invoke loadRecord() with an ignoreNotify
