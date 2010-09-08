@@ -38,7 +38,14 @@ SCUDS.NotifyingStore = SC.Store.extend({
 
       id = (ids) ? ids.objectAt(idx) : dataHash[primaryKey];
       storeKey = this.loadRecord(recordType, dataHash, id, YES);
-      if (storeKey) ret.push(storeKey);
+      if (storeKey) {
+        ret.push(storeKey);
+      } else {
+        dataHashes.removeAt(idx);
+        if (ids) ids.removeAt(idx);
+        idx-- ; // now that we have removed the current item from the array,
+        len-- ; // make sure we continue over the right ones.
+      }
     }
 
     // Notify the data source, but only if there actually were records to load.
