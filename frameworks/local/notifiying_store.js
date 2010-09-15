@@ -11,11 +11,11 @@ SCUDS.NotifyingStore = SC.Store.extend({
 
   /**
    * Overrides loadRecords() because we want it to invoke loadRecord() with an ignoreNotify
-   * parameter.  It also notifies the data source on completion.
+   * parameter.  It also notifies the data source on completion (if requested).
    *
    * For the most part, however, it does the same thing.
    */
-  loadRecords: function(recordTypes, dataHashes, ids) {
+  loadRecords: function(recordTypes, dataHashes, ids, notify) {
     var isArray = SC.typeOf(recordTypes) === SC.T_ARRAY;
     var len = dataHashes.get('length');
     var ret = [];
@@ -49,7 +49,7 @@ SCUDS.NotifyingStore = SC.Store.extend({
     }
 
     // Notify the data source, but only if there actually were records to load.
-    if (len > 0) {
+    if (notify === YES && len > 0) {
       var ds = this._getDataSource();
 
       if (ds.wantsNotification) {

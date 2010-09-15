@@ -179,18 +179,16 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
     // Get all records of specified type from the local cache.
     ds = this._getDataStoreForRecordType(recordType);
     ds.all(function(records) {
-      me._didFetch(store, ds, query, records, recordType);
+      me._didFetch(store, query, records, recordType);
     });
 
     // Don't stop here in the cascade chain.
     return SC.MIXED_STATE;
   },
  
-  _didFetch: function(store, source, query, records, recordType) {
-    var id, data;
-
+  _didFetch: function(store, query, records, recordType) {
     SC.Logger.log('Found %@ cached %@ records.'.fmt(records.length, recordType.toString()));
-    store.loadRecords(recordType, records);
+    store.loadRecords(recordType, records, undefined, NO);
     store.dataSourceDidFetchQuery(query);
   },
 
