@@ -152,8 +152,10 @@ OrionDOMStorageAdapter.prototype = {
    * @param {Function} callback The optional callback to invoke on completion.
    */
   get: function(id, callback) {
+    var rec = null;
+
     try {
-      var rec = this.deserialize(this.storage.getItem(this._keyPrefix + id));
+      rec = this.deserialize(this.storage.getItem(this._keyPrefix + id));
     } catch(e) {
       console.warn('Error during deserialization; removing item from cache.');
       this.remove(id);
