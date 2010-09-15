@@ -190,20 +190,8 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
     var id, data;
 
     SC.Logger.log('Found %@ cached %@ records.'.fmt(records.length, recordType.toString()));
-
-    records.forEach(function(dataHash) {
-      if (dataHash) {
-        id = dataHash.id;
-        // We can safely push this data AS IS and the store will ensure that minimals do not
-        // overwrite completes.
-        store.pushRetrieve(recordType, id, dataHash);
-      }
-    });
-
-    // Transition the query-backed record array to the READY state so that bindings will fire.
-    SC.RunLoop.begin();
+    store.loadRecords(recordType, records);
     store.dataSourceDidFetchQuery(query);
-    SC.RunLoop.end();
   },
 
   /**
