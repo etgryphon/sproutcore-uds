@@ -40,7 +40,14 @@ OrionDOMStorageAdapter.prototype = {
 
     // Initialize the index table.
     this._indexArrayName = this._keyPrefix + 'index';
-    this._indexArray = this.deserialize(this.storage.getItem(this._indexArrayName)) || [];
+
+    try {
+      this._indexArray = this.deserialize(this.storage.getItem(this._indexArrayName)) || [];
+    } catch(e) {
+      // Error during deserialization; nuke the cache.
+      console.warn('Error during deserialization of index; clearing the cache.');
+      this.nuke();
+    }
 
     // Fallback for the stupider browsers/versions.
     if (!(this.storage instanceof window.Storage)) {
@@ -145,7 +152,13 @@ OrionDOMStorageAdapter.prototype = {
    * @param {Function} callback The optional callback to invoke on completion.
    */
   get: function(id, callback) {
-    var rec = this.deserialize(this.storage.getItem(this._keyPrefix + id));
+    try {
+      var rec = this.deserialize(this.storage.getItem(this._keyPrefix + id));
+    } catch(e) {
+      console.warn('Error during deserialization; removing item from cache.');
+      this.remove(id);
+    }
+
     if (rec) {
       rec.key = id;
       if (callback) callback(obj);
@@ -178,7 +191,12 @@ OrionDOMStorageAdapter.prototype = {
     // Concatenate the entire results array and deserialize.
     if (results.length > 0) {
       var allRecords = results.join(',');
-      results = this.deserialize('[' + allRecords + ']');
+      try {
+        results = this.deserialize('[' + allRecords + ']');
+      } catch(e) {
+        console.warn('Error during deserialization; clearing the cache.');
+        this.nuke();
+      }
     }
 
     // Invoke the callback.
