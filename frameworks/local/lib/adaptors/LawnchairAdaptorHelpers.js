@@ -94,7 +94,13 @@ var LawnchairAdaptorHelpers = {
   // Deserialize JSON.
   deserialize: function(json) {
     if (typeof JSON != 'undefined') { 
-      return JSON.parse(json);
+      try {
+        // Try JSON.parse first and revert to eval if it throws and exception.
+        return JSON.parse(json);
+      } catch(e) {
+        return eval('(' + json + ')');
+      }
+
     } else {
       return eval('(' + json + ')');
     }

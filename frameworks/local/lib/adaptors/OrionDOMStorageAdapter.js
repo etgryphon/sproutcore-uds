@@ -38,17 +38,6 @@ OrionDOMStorageAdapter.prototype = {
     this.table = this.merge('field', options.table);
     this._keyPrefix = this.table + ':';
 
-    // Initialize the index table.
-    this._indexArrayName = this._keyPrefix + 'index';
-
-    try {
-      this._indexArray = this.deserialize(this.storage.getItem(this._indexArrayName)) || [];
-    } catch(e) {
-      // Error during deserialization; nuke the cache.
-      console.warn('Error during deserialization of index; clearing the cache.');
-      this.nuke();
-    }
-
     // Fallback for the stupider browsers/versions.
     if (!(this.storage instanceof window.Storage)) {
       var self = this;
@@ -73,6 +62,17 @@ OrionDOMStorageAdapter.prototype = {
           }
         };
       })();
+    }
+
+    // Initialize the index table.
+    this._indexArrayName = this._keyPrefix + 'index';
+
+    try {
+      this._indexArray = this.deserialize(this.storage.getItem(this._indexArrayName)) || [];
+    } catch(e) {
+      // Error during deserialization; nuke the cache.
+      console.warn('Error during deserialization of index; clearing the cache.');
+      this.nukeWithoutIndex();
     }
   },
 
@@ -196,8 +196,9 @@ OrionDOMStorageAdapter.prototype = {
       try {
         results = this.deserialize('[' + allRecords + ']');
       } catch(e) {
-        console.warn('Error during deserialization; clearing the cache.');
+        console.warn('Error during deserialization of records; clearing the cache.');
         this.nuke();
+        results = null;
       }
     }
 
@@ -234,21 +235,43 @@ OrionDOMStorageAdapter.prototype = {
    * @param {Function} callback The optional callback to invoke on completion.
    */
   nuke: function(callback) {
-    var self = this;
+    var index = this._indexArray;
 
-    // Remove all of the records.
-    this.all(function(r) {
-      for (var i = 0, l = r.length; i < l; i++) {
-        self.remove(r[i]);
-      }
+    // Remove all records.
+    for (var i = 0, len = index.length; i < len; ++i) {
+      this.storage.removeItem(index[i]);
+    }
 
-      // Remove the index array.
-      self.remove(self._indexArrayName);
-      this._indexArray = [];
-    });
+    // Clear the index array.
+    this._indexArray = [];
+    this.storage.setItem(this._indexArrayName, this.serialize(this._indexArray));
 
     // Invoke the callback.
     if (callback) callback();
+  },
+
+  /**
+   * Removes all data associated with this table from the local storage WITHOUT using the index
+   * array (useful if the index array is corrupt).
+   */
+  nukeWithoutIndex: function() {
+    var table = this.table;
+    var id;
+
+    // Iterate through the entirety of the local storage.
+    for (var i = 0, len = this.storage.length; i < len; ++i) {
+      id = this.storage.key(i);
+
+      // Do a cheap short-circuit if possible.
+      if (id.charAt(0) !== table.charAt(0)) continue;
+
+      // If the record matches the record type of the table, remove it.
+      if (this.table === id.split(':')[0]) this.storage.removeItem(id); 
+    }
+
+    // Clear the index table.
+    this._indexArray = [];
+    this.storage.setItem(this._indexArrayName, this.serialize(this._indexArray));
   }
 };
 

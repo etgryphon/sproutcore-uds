@@ -187,6 +187,14 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
   },
  
   _didFetch: function(store, query, records, recordType) {
+    if (SC.typeOf(records) !== SC.T_ARRAY) {
+      // Something bad happened and the cache was likely nuked, so indicate on the query that there
+      // was an error in the LDS.  This allows any data sources that appear later in the chain to
+      // act accordingly.
+      query.set('errorInLDS', YES);
+      return;
+    }
+
     SC.Logger.log('Found %@ cached %@ records.'.fmt(records.length, recordType.toString()));
     store.loadRecords(recordType, records, undefined, NO);
     store.dataSourceDidFetchQuery(query);
