@@ -31,6 +31,18 @@ SCUDS.NotifyingStore = SC.Store.extend({
     // Load each record individually.
     for (idx = 0; idx < len; idx++) {
       dataHash = dataHashes.objectAt(idx);
+
+      if (!dataHash) {
+        // This normally shouldn't happen, but in case it does...
+        dataHashes.removeAt(idx);
+        if (ids) ids.removeAt(idx);
+
+        // Decrement the counters and continue with the loop.
+        idx--;
+        len--;
+        continue;
+      }
+
       if (isArray) {
         recordType = recordTypes.objectAt(idx) || SC.Record;
         primaryKey = recordType.prototype.primaryKey;
@@ -38,13 +50,16 @@ SCUDS.NotifyingStore = SC.Store.extend({
 
       id = (ids) ? ids.objectAt(idx) : dataHash[primaryKey];
       storeKey = this.loadRecord(recordType, dataHash, id, YES);
+
       if (storeKey) {
         ret.push(storeKey);
       } else {
         dataHashes.removeAt(idx);
         if (ids) ids.removeAt(idx);
-        idx-- ; // now that we have removed the current item from the array,
-        len-- ; // make sure we continue over the right ones.
+
+        // Decrement the counters.
+        idx--;
+        len--;
       }
     }
 
@@ -64,7 +79,9 @@ SCUDS.NotifyingStore = SC.Store.extend({
    * Overrides loadRecord() to notifiy the data source on completion.
    */
   loadRecord: function(recordType, dataHash, id, ignoreNotify) {
-    if (dataHash.status && dataHash.status === "deleted") {
+    if (!dataHash) return null;
+
+    if (dataHash.status === "deleted") {
       var sk = this.storeKeyExists(recordType, id);
       if (!SC.none(sk)) {
         SC.RunLoop.begin();
