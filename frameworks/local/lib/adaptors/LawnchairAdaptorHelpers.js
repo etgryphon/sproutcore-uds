@@ -98,6 +98,7 @@ var LawnchairAdaptorHelpers = {
         // Try JSON.parse first and revert to eval if it throws and exception.
         return JSON.parse(json);
       } catch(e) {
+        console.warn('Exception thrown by JSON.parse(); trying eval() instead...');
         return eval('(' + json + ')');
       }
 
