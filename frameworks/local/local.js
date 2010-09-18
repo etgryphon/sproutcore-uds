@@ -1,5 +1,6 @@
-/*globals  SCUDS*/
+/*globals  SCUDS Lawnchair*/
 sc_require('dom');
+sc_require('lib/Lawnchair');
 
 /**
  * An extension of the SC.DataSource class that acts as a proxy between the SC datastore and the
@@ -48,8 +49,9 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
   
   _getDataStoreForRecordType: function(recordType){
     if(!this._isRecordTypeSupported(recordType)) return NO;
+    recordType = recordType.toString();
     var ret = this._dataStores[recordType] || SCUDS.DOMStorageAdapter.create({localStorageKey: recordType});
-    this.dataStores[recordType] = ret;
+    this._dataStores[recordType] = ret;
     return ret;
   },
 
@@ -102,73 +104,75 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
   },
 
 
-  // retrieveRecord: function(store, storeKey, params) {
-  //   if (!store) {
-  //     SC.Logger.error('Error retrieving record: Invalid store.');
-  //     return NO;
-  //   }
-  // 
-  //   var recordType = store.recordTypeFor(storeKey);
-  //   if (!this._isRecordTypeSupported(recordType)) return NO;
-  // 
-  //   var me = this;
-  //   var id = store.idFor(storeKey);
-  //   var ds = this._getDataStoreForRecordType(recordType);
-  //   var dataHash = store.readDataHash(storeKey);
-  //   var recTypeStr = recordType.toString();
-  // 
-  //   if (!dataHash) return NO;
-  // 
-  //   SC.Logger.log('Retrieving %@:%@ from local cache...'.fmt(recTypeStr, id));
-  // 
-  //   var type = dataHash.type;
-  //   
-  //   ds.get(id, function(o) {
-  //     SC.Logger.log('Found %@:%@ in local cache.'.fmt(recTypeStr, id));
-  //     me._retrieveCompleted(store, id, o, recordType);
-  //   });
-  //   
-  //   return SC.MIXED_STATE;
-  // },
-  //  
-  // _retrieveCompleted: function(store, id, record, recordType) {
-  //   var data = record;
-  //   SC.RunLoop.begin();
-  //   store.pushRetrieve(recordType, id, data);
-  //   SC.RunLoop.end();
-  // },
-  // 
-  // retrieveRecords: function(store, storeKeys, ids) {
-  //   // Only retrieve records when asking for more than one, otherwise forward to the next data
-  //   // source in the chain.
-  //   if (storeKeys && storeKeys.get('length') > 1) {
-  //     return this._handleEach(store, storeKeys, this.retrieveRecord, ids);  
-  //   } else {
-  //     return NO;
-  //   }
-  // 
-  //   // return this._handleEach(store, storeKeys, this.retrieveRecord, ids);  
-  // },
+  retrieveRecord: function(store, storeKey, params) {
+    // if (!store) {
+    //   SC.Logger.error('Error retrieving record: Invalid store.');
+    //   return NO;
+    // }
+    //   
+    // var recordType = store.recordTypeFor(storeKey);
+    // if (!this._isRecordTypeSupported(recordType)) return NO;
+    //   
+    // var me = this;
+    // var id = store.idFor(storeKey);
+    // var ds = this._getDataStoreForRecordType(recordType);
+    // var dataHash = store.readDataHash(storeKey);
+    // var recTypeStr = recordType.toString();
+    //   
+    // if (!dataHash) return NO;
+    //   
+    // SC.Logger.log('Retrieving %@:%@ from local cache...'.fmt(recTypeStr, id));
+    //   
+    // var type = dataHash.type;
+    // 
+    // ds.get(id, function(o) {
+    //   SC.Logger.log('Found %@:%@ in local cache.'.fmt(recTypeStr, id));
+    //   me._retrieveCompleted(store, id, o, recordType);
+    // });
+    // 
+    // return SC.MIXED_STATE;
+    return NO;
+  },
+   
+  _retrieveCompleted: function(store, id, record, recordType) {
+    var data = record;
+    SC.RunLoop.begin();
+    store.pushRetrieve(recordType, id, data);
+    SC.RunLoop.end();
+  },
+  
+  retrieveRecords: function(store, storeKeys, ids) {
+    // // Only retrieve records when asking for more than one, otherwise forward to the next data
+    // // source in the chain.
+    // if (storeKeys && storeKeys.get('length') > 1) {
+    //   return this._handleEach(store, storeKeys, this.retrieveRecord, ids);  
+    // } else {
+    //   return NO;
+    // }
+    //   
+    // // return this._handleEach(store, storeKeys, this.retrieveRecord, ids);  
+    return NO;
+  },
 
-  // /**
-  //  * Called by the notifying store when a single record is loaded outside the context of this
-  //  * data source.
-  //  */
-  // notifyDidLoadRecord: function(store, recordType, dataHash, id) {
-  //   if (!this._isRecordTypeSupported(recordType)) return;
-  // 
-  //   var ds = this._getDataStoreForRecordType(recordType);
-  //   var storeKey = store.storeKeyFor(recordType, id);
-  //   var me = this;
-  // 
-  //   // Get the data from the store to utilise the minimal-complete merge code.
-  //   dataHash = store.readDataHash(storeKey);
-  // 
-  //   // Write the record to the local storage.
-  //   ds.save({ key: id, record: dataHash }, function() {
-  //     SC.Logger.log('Wrote %@:%@ to local cache.'.fmt(recordType.toString(), id));
-  //   });
-  // },
+  /**
+   * Called by the notifying store when a single record is loaded outside the context of this
+   * data source.
+   */
+  notifyDidLoadRecord: function(store, recordType, dataHash, id) {
+    // if (!this._isRecordTypeSupported(recordType)) return;
+    //   
+    // var ds = this._getDataStoreForRecordType(recordType);
+    // var storeKey = store.storeKeyFor(recordType, id);
+    // var me = this;
+    //   
+    // // Get the data from the store to utilise the minimal-complete merge code.
+    // dataHash = store.readDataHash(storeKey);
+    //   
+    // // Write the record to the local storage.
+    // ds.save({ key: id, record: dataHash }, function() {
+    //   SC.Logger.log('Wrote %@:%@ to local cache.'.fmt(recordType.toString(), id));
+    // });
+  },
 
   /**
    * Called by the notifying store when a single record is written to the store outside the context
@@ -197,6 +201,7 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
    */
   nukeType: function(recordType) {
     var ds = this._getDataStoreForRecordType(recordType);
+    console.log('nukeing record type');
     ds.nuke();
   },
 
@@ -220,4 +225,50 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
     SC.Logger.log('Cleared all data in local cache.');
   }
 });
+
+// Class-level datastores.
+SCUDS.LocalDataSource.datastores = {};
+
+/**
+ * Returns a class-level datastore.
+ */
+SCUDS.LocalDataSource.getDataStore = function(storeName) {
+  var ds = SCUDS.LocalDataSource.datastores[storeName];
+  var storageMethod = 'dom';
+
+  if (ds) return ds;
+
+  ds = new Lawnchair({
+    table: storeName,
+    adaptor: storageMethod,
+    onError: function(tx, e, msg) {
+      SC.Logger.error("Lawnchair error: " + msg);
+      SC.Logger.error(e);
+    }
+  });
+
+  SCUDS.LocalDataSource.datastores[storeName] = ds;
+  return ds;
+};
+
+/**
+ * Clears all class-level datastores.
+ */
+SCUDS.LocalDataSource.clearAll = function(callback) {
+  // Nuke each class-level datastore.
+  var stores = SCUDS.LocalDataSource.datastores;
+  if (SC.typeOf(stores) !== SC.T_HASH) return;
+
+  for (var name in stores) {
+    if (stores[name] && stores[name].nuke) stores[name].nuke();
+  }
+
+  // Reset the data structure.
+  SCUDS.LocalDataSource.datastores = {};
+
+  SC.Logger.log('Cleared class-level datastores.');
+
+  // Invoke the callback.
+  if (SC.typeOf(callback) === SC.T_FUNCTION) callback();
+};
 
