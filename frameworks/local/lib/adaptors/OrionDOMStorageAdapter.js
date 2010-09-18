@@ -24,19 +24,12 @@ var OrionDOMStorageAdapter = function(options) {
 };
 
 OrionDOMStorageAdapter.prototype = {
-
-  supportsChunkedLoads: YES,
-  _indexArrayName: null,
-  _indexArray: null,
-  _keyPrefix: null,
-
   /**
    * Initializes the adapter with the given options (hash).
    */
   init: function(options) {
     this.storage = this.merge(window.localStorage, options.storage);
     this.table = this.merge('field', options.table);
-    this._keyPrefix = this.table + ':';
 
     // Fallback for the stupider browsers/versions.
     if (!(this.storage instanceof window.Storage)) {
@@ -63,18 +56,25 @@ OrionDOMStorageAdapter.prototype = {
         };
       })();
     }
-
-    // Initialize the index table.
-    this._indexArrayName = this._keyPrefix + 'index';
-
-    try {
-      this._indexArray = this.deserialize(this.storage.getItem(this._indexArrayName)) || [];
-    } catch(e) {
-      // Error during deserialization; nuke the cache.
-      console.warn('Error during deserialization of index; clearing the cache.');
-      this.nukeWithoutIndex();
-    }
   },
+  
+  _deserializeHash: function(){
+    var key = this.table, results;
+    try {
+      results = this.deserialize(this.storage.getItem(key)) || {};
+    } catch(e) {
+      console.warn('Error during deserialization of records; clearing the cache.');
+      this.nuke();
+      results = {};
+    }
+    return results;
+  },
+  
+  _serializeHash: function(data){
+    var key = this.table;
+    return this.storage.setItem(key, this.serialize(data));
+  },
+  
 
   /**
    * Writes a single record or an array of records to the local storage.
@@ -91,20 +91,9 @@ OrionDOMStorageAdapter.prototype = {
       this._saveAll(obj, callback);
       return;
     }
-
-    // Store the ID of the record in the index array.
-    var index = this._indexArray;
-    var id = this._keyPrefix + (key || this.uuid());
-    var currIndex = index.indexOf(id);
-
-    if (currIndex <= 0) {
-      index.push(id);
-      this.storage.setItem(this._indexArrayName, this.serialize(index));
-    }
-
-    // Store the record itself.
-    this.storage.setItem(id, this.serialize(obj.record));
-
+    var data = this._deserializeHash();
+    data[key] = obj;
+    this._serializeHash(data);
     // Invoke the callback.
     if (callback) callback(obj);
   },
@@ -118,29 +107,16 @@ OrionDOMStorageAdapter.prototype = {
    * @param {Function} callback The optional callback to invoke on completion.
    */
   _saveAll: function(obj, callback) {
-    var table = this.table;
-    var ids = obj.key;
+    var data = this._deserializeHash();
+    var keys = obj.key, length = obj.key.length;
     var records = obj.records || obj.record;
-    var startAt = obj.startIndex || 0;
-    var count = obj.count;
-    var len = ids.length;
-    var endAt = count ? (len - startAt > count ? startAt + count : len) : len;
-    var index = this._indexArray;
-    var currIndex, id;
-
-    for (var i = startAt; i < endAt; i++) {
-      // Store the ID of the record in the index array.
-      id = this._keyPrefix + ids[i];
-      currIndex = index.indexOf(id);
-      if (currIndex < 0) index.push(id);
-
-      // Store the record itself.
-      this.storage.setItem(id, this.serialize(records[i]));
+    
+    for (var i = 0; i < length; i++) {      
+      data[keys[i]] = records[i];
     }
 
-    // Reserialize the index array.
-    this.storage.setItem(this._indexArrayName, this.serialize(index));
-
+    this._serializeHash(data);
+    
     // Invoke the callback.
     if (callback) callback();
   },
@@ -152,14 +128,8 @@ OrionDOMStorageAdapter.prototype = {
    * @param {Function} callback The optional callback to invoke on completion.
    */
   get: function(id, callback) {
-    var rec = null;
-
-    try {
-      rec = this.deserialize(this.storage.getItem(this._keyPrefix + id));
-    } catch(e) {
-      console.warn('Error during deserialization; removing item from cache.');
-      this.remove(id);
-    }
+    var data = this._deserializeHash();
+    var rec = data[id];
 
     if (rec) {
       rec.key = id;
@@ -176,29 +146,11 @@ OrionDOMStorageAdapter.prototype = {
    */
   all: function(callback) {
     var cb = this.terseToVerboseCallback(callback);
-    var results = [];
-    var table = this.table;
-    var id, rec;
-
-    // Get the index for the table and iterate over them.
-    var index = this._indexArray;
-
-    for (var i = 0, len = index.length; i < len; ++i) {
-      id = index[i];
-      rec = this.storage.getItem(id);
-      // Push the record (as a string) onto the results array.
-      if (rec) results.push(rec);
-    }
-
-    // Concatenate the entire results array and deserialize.
-    if (results.length > 0) {
-      var allRecords = results.join(',');
-      try {
-        results = this.deserialize('[' + allRecords + ']');
-      } catch(e) {
-        console.warn('Error during deserialization of records; clearing the cache.');
-        this.nuke();
-        results = null;
+    var results = [], data = this._deserializeHash();
+    
+    for(var i in data){
+      if(data.hasOwnProperty(i)){
+        results.push(data[i]);
       }
     }
 
@@ -213,18 +165,10 @@ OrionDOMStorageAdapter.prototype = {
    * @param {Function} callback The optional callback to invoke on completion.
    */
   remove: function(id, callback) {
-    // Remove the record.
-    var key = this._keyPrefix + id;
-    this.storage.removeItem(key);
-
-    // Remove the ID from the index array.
-    var index = this._indexArray;
-    var currIndex = index.indexOf(key);
-    if (currIndex >= 0) {
-      index.pop(currIndex);
-      this.storage.setItem(this._indexArrayName, this.serialize(index));  
-    }
-
+    var data = this._deserializeHash();
+    delete data[id];
+    
+    this._serializeHash(data);
     // Invoke the callback.
     if (callback) callback();
   },
@@ -235,43 +179,10 @@ OrionDOMStorageAdapter.prototype = {
    * @param {Function} callback The optional callback to invoke on completion.
    */
   nuke: function(callback) {
-    var index = this._indexArray;
-
-    // Remove all records.
-    for (var i = 0, len = index.length; i < len; ++i) {
-      this.storage.removeItem(index[i]);
-    }
-
-    // Clear the index array.
-    this._indexArray = [];
-    this.storage.setItem(this._indexArrayName, this.serialize(this._indexArray));
+    this.storage.removeItem(this.table);
 
     // Invoke the callback.
     if (callback) callback();
-  },
-
-  /**
-   * Removes all data associated with this table from the local storage WITHOUT using the index
-   * array (useful if the index array is corrupt).
-   */
-  nukeWithoutIndex: function() {
-    var table = this.table;
-    var id;
-
-    // Iterate through the entirety of the local storage.
-    for (var i = 0, len = this.storage.length; i < len; ++i) {
-      id = this.storage.key(i);
-
-      // Do a cheap short-circuit if possible.
-      if (id.charAt(0) !== table.charAt(0)) continue;
-
-      // If the record matches the record type of the table, remove it.
-      if (this.table === id.split(':')[0]) this.storage.removeItem(id); 
-    }
-
-    // Clear the index table.
-    this._indexArray = [];
-    this.storage.setItem(this._indexArrayName, this.serialize(this._indexArray));
   }
 };
 
