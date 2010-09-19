@@ -104,7 +104,6 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
     ds.save(dataHashes);
   },
 
-
   retrieveRecord: function(store, storeKey, params) {
     // if (!store) {
     //   SC.Logger.error('Error retrieving record: Invalid store.');
