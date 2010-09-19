@@ -37,7 +37,8 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
     if (this.isTesting) return YES;
     var supported = this._supportedRecordTypes;
     if (supported === null) return YES; // If nothing is set, allow all.
-    return supported.contains(recordType.toString());
+    var rt = SC.browser.msie ? recordType._object_className : recordType.toString();
+    return supported.contains(rt);
   },
   
   _dataStores: {},
@@ -49,7 +50,7 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
   
   _getDataStoreForRecordType: function(recordType){
     if(!this._isRecordTypeSupported(recordType)) return NO;
-    recordType = recordType.toString();
+    recordType = SC.browser.msie ? recordType._object_className : recordType.toString();
     var ret = this._dataStores[recordType] || SCUDS.DOMStorageAdapter.create({localStorageKey: recordType});
     this._dataStores[recordType] = ret;
     return ret;
@@ -78,7 +79,7 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
       query.set('errorInLDS', YES);
       return NO;
     }
-
+    
     SC.Logger.log('Found %@ cached %@ records.'.fmt(records.length, recordType.toString()));
     store.loadRecords(recordType, records, undefined, NO);
     store.dataSourceDidFetchQuery(query);
@@ -96,7 +97,7 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
   notifyDidLoadRecords: function(store, recordType, dataHashes, ids) {
     var ds = this._getDataStoreForRecordType(recordType);    
     if (!ds) return;
-
+    
     var len = (dataHashes && dataHashes.length) ? dataHashes.length : 0;
     // Short circuit if there's nothing to load.
     if (len === 0) return;

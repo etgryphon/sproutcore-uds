@@ -48,7 +48,10 @@ SCUDS.DOMStorageAdapter = SC.Object.extend(
   },
   
   _serializeHash: function(data){
-    return window.localStorage.setItem(this.localStorageKey, SC.json.encode(data));
+    SC.Benchmark.start('encodingData');
+    var ret = window.localStorage.setItem(this.localStorageKey, SC.json.encode(data));
+    SC.Benchmark.end('encodingData');
+    return ret;
   },
   
 
@@ -58,7 +61,6 @@ SCUDS.DOMStorageAdapter = SC.Object.extend(
    @returns YES|NO depending on success
   */
   save: function(obj) {
-
     if (obj instanceof Array) {
       // Got an array of objects.
       return this._saveAll(obj);
@@ -85,11 +87,38 @@ SCUDS.DOMStorageAdapter = SC.Object.extend(
     var data = this._deserializeHash();
     var length = array.length;
     
-    for (var i = 0; i < length; i++) {
-      data[array[i][this.contentItemKey]] = array[i]; //TODO: optimize ie perf
+    if(length > 10 && SC.browser.msie){ //only do this for msie
+      var startIndex = 0, that = this;
+      this.invokeLater(function(){
+        that._chunkSave(data, array, startIndex, length);
+      });
     }
-
-    this._serializeHash(data);
+    else{
+      for (var i = 0; i < length; i++) {
+        data[array[i][this.contentItemKey]] = array[i]; //TODO: optimize ie perf
+      }
+      this._serializeHash(data);
+    }
+  },
+  
+  _chunkSave: function(data, array, startIndex, length){
+    var i;
+    startIndex+=10;
+    if(startIndex < length){
+      for(i = startIndex-10; i < startIndex; i++){
+        data[array[i][this.contentItemKey]] = array[i]; 
+      }
+      var that = this;
+      this.invokeLater(function(){
+        that._chunkSave(data,array,startIndex,length);
+      },5);
+    }
+    else{
+      for(i = startIndex-10; i < length; i++){
+        data[array[i][this.contentItemKey]] = array[i]; 
+      }
+      this._serializeHash(data);
+    }    
   },
 
   /**
