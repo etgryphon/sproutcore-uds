@@ -16,8 +16,10 @@ SCUDS.DOMStorageAdapter = SC.Object.extend(
   //unique idenitify on the record usually id or guid
   contentItemKey: 'id',
   
+  shouldBenchmark: NO,
+  
   _deserializeHash: function(){
-    SC.Benchmark.start('domAccess');
+    if(this.shouldBenchmark) SC.Benchmark.start('domAccess');
     var key = this.localStorageKey, results;
     try {
       results = SC.json.decode(window.localStorage.getItem(key)) || {};
@@ -26,13 +28,13 @@ SCUDS.DOMStorageAdapter = SC.Object.extend(
       this.nuke();
       results = {};
     }
-    SC.Benchmark.end('domAccess');
+    if(this.shouldBenchmark) SC.Benchmark.end('domAccess');
     return results;
   },
   
   
   _deserializeAsArray: function(){
-    SC.Benchmark.start('arrayAccess');
+    if(this.shouldBenchmark) SC.Benchmark.start('arrayAccess');
     var key = this.localStorageKey, results;
     try {
       var data = window.localStorage.getItem(key);
@@ -43,7 +45,7 @@ SCUDS.DOMStorageAdapter = SC.Object.extend(
       this.nuke();
       results = [];
     }
-    SC.Benchmark.end('arrayAccess');
+    if(this.shouldBenchmark) SC.Benchmark.end('arrayAccess');
     return results;
   },
   //TODO: to make this faster...
@@ -51,9 +53,9 @@ SCUDS.DOMStorageAdapter = SC.Object.extend(
   // •put writes into pages
   // •only write onece per browser session (at window close)
   _serializeHash: function(data){
-    SC.Benchmark.start('encodingData');
+    if(this.shouldBenchmark) SC.Benchmark.start('encodingData');
     var ret = window.localStorage.setItem(this.localStorageKey, SC.json.encode(data));
-    SC.Benchmark.end('encodingData');
+    if(this.shouldBenchmark) SC.Benchmark.end('encodingData');
     return ret;
   },
   

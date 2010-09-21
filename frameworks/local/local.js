@@ -139,10 +139,10 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
   },
    
   _retrieveCompleted: function(store, id, record, recordType) {
-    var data = record;
-    SC.RunLoop.begin();
-    store.pushRetrieve(recordType, id, data);
-    SC.RunLoop.end();
+    // var data = record;
+    // SC.RunLoop.begin();
+    // store.pushRetrieve(recordType, id, data);
+    // SC.RunLoop.end();
   },
   
   retrieveRecords: function(store, storeKeys, ids) {
