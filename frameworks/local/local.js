@@ -37,6 +37,7 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
     if (this.isTesting) return YES;
     var supported = this._supportedRecordTypes;
     if (supported === null) return YES; // If nothing is set, allow all.
+    if(!recordType) return NO;
     var rt = SC.browser.msie ? recordType._object_className : recordType.toString();
     return supported.contains(rt);
   },

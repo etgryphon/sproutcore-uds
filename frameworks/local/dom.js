@@ -46,7 +46,10 @@ SCUDS.DOMStorageAdapter = SC.Object.extend(
     SC.Benchmark.end('arrayAccess');
     return results;
   },
-  
+  //TODO: to make this faster...
+  // •compress data
+  // •put writes into pages
+  // •only write onece per browser session (at window close)
   _serializeHash: function(data){
     SC.Benchmark.start('encodingData');
     var ret = window.localStorage.setItem(this.localStorageKey, SC.json.encode(data));
