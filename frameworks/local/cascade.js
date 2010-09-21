@@ -77,6 +77,16 @@ SCUDS.NotifyingCascadeDataSource = SC.CascadeDataSource.extend({
     if (dataSource.wantsNotification) this.wantsNotification.add(dataSource);
     return ret;
   },
+
+  forEach: function(func) {
+    this.dataSources.forEach(func);
+  },
+
+  nukeLocal: function() {
+    this.forEach(function(ds) {
+      if (ds.nuke) ds.nuke();
+    });
+  },
   
   init: function() {
     sc_super();
