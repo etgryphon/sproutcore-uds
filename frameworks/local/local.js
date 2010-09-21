@@ -1,6 +1,8 @@
 /*globals Lawnchair google SCUDS*/
 sc_require('lib/Lawnchair');
 
+SCUDS.MILLISECONDS_IN_DAY = 24*60*60*1000;
+
 /**
  * An extension of the SC.DataSource class that acts as a proxy between the SC datastore and the
  * web browser's local storage mechanism.
@@ -17,6 +19,23 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
   wantsNotification: YES,
   isTesting: NO,
   chunkSize: 200,
+
+  removeStaleCache: NO,
+
+  /**
+   * age in miliseconds ago. ie.
+   *
+   * 30 * SCUDS.MILLISECONDS_IN_DAY
+   *
+   * if we where last updated 30 days ago, reset data.
+   */
+  staleAge: 30 * SCUDS.MILLISECONDS_IN_DAY,
+
+  /**
+   * The name of the cookie that you have stored the timestamp of the last
+   * update.
+   */
+  staleCookieName: 'lastRetrieved',
 
   /**
    * Initialize the various data structrues used by the local data source.
@@ -172,6 +191,28 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
 
     var ds;
     var me = this;
+
+    var staleCookieName = this.get('staleCookieName'),
+        lastRetrievedCookie = SC.Cookie.find(staleCookieName),
+        lastRetrieved = '',
+        removeStaleCache = this.get('removeStaleCache'),
+        secondsAgo = this.get('staleAge');
+    if (removeStaleCache && secondsAgo && lastRetrievedCookie && lastRetrievedCookie.get) {
+      lastRetrieved = lastRetrievedCookie.get('value');
+      if(SC.typeOf(lastRetrieved) === SC.T_STRING && lastRetrieved.length > 0) {
+        var lastRetrievedAt = parseInt(lastRetrieved);
+        var timeAgo = SC.DateTime.create().get('milliseconds') - secondsAgo;
+        if(isNaN(lastRetrievedAt) || lastRetrievedAt < timeAgo) {
+          lastRetrieved = '';
+        }
+      }
+    }
+    if (removeStaleCache && secondsAgo && lastRetrieved === '') {
+      // Clear out local data store before reloading everything from server
+      console.info('Clearing local data store since its contents are old or there is no cookie');
+      CoreTasks.store._getDataSource().nukeLocal();
+      return NO;
+    }
 
     // Let others know that this query was handled by the LDS.
     query.set('handledByLDS', YES);
