@@ -37,7 +37,7 @@ SCUDS.DOMStorageAdapter = SC.Object.extend(
     if(this.shouldBenchmark) SC.Benchmark.start('arrayAccess');
     var key = this.localStorageKey, results;
     try {
-      var data = window.localStorage.getItem(key);
+      var data = window.localStorage.getItem(key) || '';
       data = data.replace(/\"[0-9]+\":/gi,''); //turn it into an array reduce lines for ie...
       results = SC.json.decode('['+data.substring(1,data.length-1)+']') || [];
     } catch(e) {
