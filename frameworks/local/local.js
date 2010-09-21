@@ -12,7 +12,10 @@ sc_require('lib/Lawnchair');
  * @since 0.1
  */
 SCUDS.LocalDataSource = SC.DataSource.extend({
-
+  
+  version: '0.1',
+  
+  
   wantsNotification: YES,
 
   /*
@@ -52,7 +55,7 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
   _getDataStoreForRecordType: function(recordType){
     if(!this._isRecordTypeSupported(recordType)) return NO;
     recordType = SC.browser.msie ? recordType._object_className : recordType.toString();
-    var ret = this._dataStores[recordType] || SCUDS.DOMStorageAdapter.create({localStorageKey: recordType});
+    var ret = this._dataStores[recordType] || SCUDS.DOMStorageAdapter.create({localStorageKey: recordType+this.get('version')});
     this._dataStores[recordType] = ret;
     return ret;
   },
@@ -160,19 +163,10 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
    * data source.
    */
   notifyDidLoadRecord: function(store, recordType, dataHash, id) {
-    // if (!this._isRecordTypeSupported(recordType)) return;
-    //   
-    // var ds = this._getDataStoreForRecordType(recordType);
-    // var storeKey = store.storeKeyFor(recordType, id);
-    // var me = this;
-    //   
-    // // Get the data from the store to utilise the minimal-complete merge code.
-    // dataHash = store.readDataHash(storeKey);
-    //   
-    // // Write the record to the local storage.
-    // ds.save({ key: id, record: dataHash }, function() {
-    //   SC.Logger.log('Wrote %@:%@ to local cache.'.fmt(recordType.toString(), id));
-    // });
+    var ds = this._getDataStoreForRecordType(recordType);    
+    if (!ds) return;
+    ds.save(dataHash);
+    SC.Logger.log('Wrote %@:%@ to local cache.'.fmt(recordType.toString(), id));
   },
 
   /**
