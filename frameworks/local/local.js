@@ -65,35 +65,55 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
    * Called on behalf of store.find(query)
    */
   fetch: function(store, query) {
-    var recordType = query.get('recordType');
-    var ds = this._getDataStoreForRecordType(recordType);    
-    if (!ds) return NO;
-    if(this._beenFetched[recordType]) return NO;
-    
-    SC.Logger.log('Retrieving %@ records from local cache...'.fmt(recordType.toString()));
+    var handledTypes = [];
+    var errorTypes = [];
 
-    // Let others know that this query was handled by the LDS.
-    query.set('handledByLDS', YES);
- 
-    // Get all records of specified type from the local cache.
-    var records = ds.getAll();
-    if (SC.typeOf(records) !== SC.T_ARRAY) {
-      // Something bad happened and the cache was likely nuked, so indicate on the query that there
-      // was an error in the LDS.  This allows any data sources that appear later in the chain to
-      // act accordingly.
-      query.set('errorInLDS', YES);
-      return NO;
+    // Get the record type(s).
+    var recordTypes = query.get('recordTypes') || query.get('recordType');
+    if (SC.typeOf(recordTypes) === SC.T_CLASS) recordTypes = [recordTypes];
+
+    // Handle each record type (may only be one).
+    for (var i = 0, len = recordTypes.length; i < len; i++) {
+      var recordType = recordTypes[i];
+
+      var ds = this._getDataStoreForRecordType(recordType);
+      if (!ds) continue;
+
+      if (this._beenFetched[recordType]) {
+        handledTypes.push(recordType);
+        continue;
+      }
+
+      SC.Logger.log('Retrieving %@ records from local cache...'.fmt(recordType.toString()));
+
+      // Get all records of specified type from the local cache.
+      var records = ds.getAll();
+      if (SC.typeOf(records) !== SC.T_ARRAY) {
+        // Something bad happened and the cache was likely nuked.
+        errorTypes.push(recordType);
+        continue;
+      }
+
+      SC.Logger.log('Found %@ cached %@ records.'.fmt(records.length, recordType.toString()));
+      store.loadRecords(recordType, records, undefined, NO);
+      this._beenFetched[recordType] = YES;
     }
-    
-    SC.Logger.log('Found %@ cached %@ records.'.fmt(records.length, recordType.toString()));
-    store.loadRecords(recordType, records, undefined, NO);
-    store.dataSourceDidFetchQuery(query);
-    this._beenFetched[recordType] = YES;
-    
-    // Don't stop here in the cascade chain.
-    return SC.MIXED_STATE;
-  },
 
+    // Let others know that this query was handled by the LDS.  This allows any data sources that
+    // appear later in the chain to act accordingly.
+    query.set('handledByLDS', handledTypes);
+
+    // If there were errors, let others know about that too.
+    query.set('errorsInLDS', errorTypes);
+
+    // Don't stop here in the cascade chain.
+    if (handledTypes.length === 0 && errorTypes.length === 0) {
+      return NO;
+    } else {
+      store.dataSourceDidFetchQuery(query);
+      return SC.MIXED_STATE;
+    }
+  },
 
   /**
    * Called by the notifying store when multiple records are loaded outside the context of this
@@ -109,6 +129,8 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
     if (len === 0) return;
 
     ds.save(dataHashes);
+
+    SC.Logger.log('Wrote %@ %@ records to local cache.'.fmt(len, recordType.toString()));
   },
 
   retrieveRecord: function(store, storeKey, params) {

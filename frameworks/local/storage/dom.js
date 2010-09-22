@@ -5,6 +5,7 @@
   Little wrapper for DOM storage
   @extends SC.Object
   @author Mike Ball
+  @author Sean Eidemiller
   @version 0.1
 */
 SCUDS.DOMStorageAdapter = SC.Object.extend(
@@ -61,32 +62,41 @@ SCUDS.DOMStorageAdapter = SC.Object.extend(
   
 
   /**
-   Writes a single record or an array of records to the local storage.
-   
-   @returns YES|NO depending on success
-  */
-  save: function(obj) {
+   * Writes a single record or an array of records to the local storage.
+   *
+   * @param {???} obj The object (or whatever) to save.
+   * @param {String} key The key for the object (optional, will default to contentItemKey).
+   *
+   * @returns {Boolean} YES | NO depending on success.
+   */
+  save: function(obj, key) {
     if (obj instanceof Array) {
       // Got an array of objects.
       return this._saveAll(obj);
     }
+
+    if (!obj) {
+      console.error('Error writing record to cache: Record is null or undefined.');
+      return NO;
+    }
+
+    if (SC.typeOf(key) !== SC.T_STRING) key = obj[this.contentItemKey];
     
-    var key = obj[this.contentItemKey];
-    
-    if(key){
+    if (key) {
       var data = this._deserializeHash();
       data[key] = obj;
       this._serializeHash(data);
       return YES;
-    }
-    else{
-      //unable to save data
+    } else {
+      console.error('Error writing record to cache: Invalid key.');
       return NO;
     }
   },
 
   /**
    * Writes multiple records to the local storage.
+   *
+   * TODO: [MB] Return YES|NO to pass along to return call from save().
    */
   _saveAll: function(array) {
     var data = this._deserializeHash();
