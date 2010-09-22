@@ -1,5 +1,5 @@
 /*globals  SCUDS Lawnchair*/
-sc_require('dom');
+sc_require('storage/dom');
 sc_require('lib/Lawnchair');
 
 /**
