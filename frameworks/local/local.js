@@ -14,9 +14,15 @@ sc_require('lib/Lawnchair');
 SCUDS.LocalDataSource = SC.DataSource.extend({
   
   version: '0.1',
-  
-  
   wantsNotification: YES,
+
+  _dataStores: {},
+
+  /*
+   * This contains all the record types that have been fetched so far during this session.
+   * You probably don't need anything in the LDS at this point...
+   */
+  _beenFetched: {}, 
 
   /*
    * A set of supported record types as strings.
@@ -24,8 +30,6 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
    * For example: 'MyApp.Person', 'Calendar.Event', etc...
    *
    * If null, will assume that all record types are supported.
-   * 
-   * @returns {SC.Set}
    */
   _supportedRecordTypes: null,
 
@@ -40,22 +44,19 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
     if (this.isTesting) return YES;
     var supported = this._supportedRecordTypes;
     if (supported === null) return YES; // If nothing is set, allow all.
-    if(!recordType) return NO;
+    if (!recordType) return NO;
     var rt = SC.browser.msie ? recordType._object_className : recordType.toString();
     return supported.contains(rt);
   },
-  
-  _dataStores: {},
-  
-  
-  // this contains all the record types that have been fetch this session
-  // you probably don't need anything in the LDS at this point...
-  _beenFetched: {},
-  
+ 
+  /*
+   * Returns a cached data store for the given record type.
+   */
   _getDataStoreForRecordType: function(recordType){
-    if(!this._isRecordTypeSupported(recordType)) return NO;
+    if (!this._isRecordTypeSupported(recordType)) return NO;
     recordType = SC.browser.msie ? recordType._object_className : recordType.toString();
-    var ret = this._dataStores[recordType] || SCUDS.DOMStorageAdapter.create({localStorageKey: recordType+this.get('version')});
+    var ret = this._dataStores[recordType] ||
+      SCUDS.DOMStorageAdapter.create({ localStorageKey: recordType + this.get('version') });
     this._dataStores[recordType] = ret;
     return ret;
   },
@@ -103,8 +104,10 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
     if (!ds) return;
     
     var len = (dataHashes && dataHashes.length) ? dataHashes.length : 0;
+
     // Short circuit if there's nothing to load.
     if (len === 0) return;
+
     ds.save(dataHashes);
   },
 
