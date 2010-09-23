@@ -97,6 +97,7 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
       SC.Logger.log('Found %@ cached %@ records.'.fmt(records.length, recordType.toString()));
       store.loadRecords(recordType, records, undefined, NO);
       this._beenFetched[recordType] = YES;
+      handledTypes.push(recordType);
     }
 
     // Let others know that this query was handled by the LDS.  This allows any data sources that
