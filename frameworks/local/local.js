@@ -75,16 +75,18 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
     // Handle each record type (may only be one).
     for (var i = 0, len = recordTypes.length; i < len; i++) {
       var recordType = recordTypes[i];
+      var recordTypeString = SC.browser.msie ? recordType._object_className : recordType.toString();
 
       var ds = this._getDataStoreForRecordType(recordType);
+
       if (!ds) continue;
 
-      if (this._beenFetched[recordType]) {
+      if (this._beenFetched[recordTypeString]) {
         handledTypes.push(recordType);
         continue;
       }
 
-      SC.Logger.log('Retrieving %@ records from local cache...'.fmt(recordType.toString()));
+      SC.Logger.log('Retrieving %@ records from local cache...'.fmt(recordTypeString));
 
       // Get all records of specified type from the local cache.
       var records = ds.getAll();
@@ -94,10 +96,10 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
         continue;
       }
 
-      SC.Logger.log('Found %@ cached %@ records.'.fmt(records.length, recordType.toString()));
+      SC.Logger.log('Found %@ cached %@ records.'.fmt(records.length, recordTypeString));
       store.loadRecords(recordType, records, undefined, NO);
-      this._beenFetched[recordType] = YES;
-      handledTypes.push(recordType);
+      this._beenFetched[recordTypeString] = YES;
+      handledTypes.push(recordTypeString);
     }
 
     // Let others know that this query was handled by the LDS.  This allows any data sources that
