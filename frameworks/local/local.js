@@ -82,7 +82,7 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
       if (!ds) continue;
 
       if (this._beenFetched[recordTypeString]) {
-        handledTypes.push(recordType);
+        handledTypes.push(recordTypeString);
         continue;
       }
 
@@ -92,7 +92,7 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
       var records = ds.getAll();
       if (SC.typeOf(records) !== SC.T_ARRAY) {
         // Something bad happened and the cache was likely nuked.
-        errorTypes.push(recordType);
+        errorTypes.push(recordTypeString);
         continue;
       }
 
