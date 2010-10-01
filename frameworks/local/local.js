@@ -66,18 +66,37 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
    */
   fetch: function(store, query) {
     var handledTypes = [];
-    var errorTypes = [];
-
+    var errorTypes = [], records, recordType, recordTypeString, ds;
     // Get the record type(s).
     var recordTypes = query.get('recordTypes') || query.get('recordType');
     if (SC.typeOf(recordTypes) === SC.T_CLASS) recordTypes = [recordTypes];
+    
+    //This function handles pulling the data out of localStorage
+    //and pushing it into the store it is invoked later so it does
+    //not block any following remote calls...
+    var later = function(){
+      //SC.Benchmark.start('later');
+      // Get all records of specified type from the local cache.
+      records = ds.getAll();
+      if (SC.typeOf(records) !== SC.T_ARRAY) {
+        // Something bad happened and the cache was likely nuked.
+        errorTypes.push(recordTypeString);
+        return;
+      }
 
+      SC.Logger.log('Found %@ cached %@ records.'.fmt(records.length, recordTypeString));
+      store.loadRecords(recordType, records, undefined, NO);
+      this._beenFetched[recordTypeString] = YES;
+      //SC.Benchmark.end('later');
+    };
+    
+    
     // Handle each record type (may only be one).
     for (var i = 0, len = recordTypes.length; i < len; i++) {
-      var recordType = recordTypes[i];
-      var recordTypeString = SC.browser.msie ? recordType._object_className : recordType.toString();
+      recordType = recordTypes[i];
+      recordTypeString = SC.browser.msie ? recordType._object_className : recordType.toString();
 
-      var ds = this._getDataStoreForRecordType(recordType);
+      ds = this._getDataStoreForRecordType(recordType);
 
       if (!ds) continue;
 
@@ -85,21 +104,11 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
         handledTypes.push(recordTypeString);
         continue;
       }
-
       SC.Logger.log('Retrieving %@ records from local cache...'.fmt(recordTypeString));
-
-      // Get all records of specified type from the local cache.
-      var records = ds.getAll();
-      if (SC.typeOf(records) !== SC.T_ARRAY) {
-        // Something bad happened and the cache was likely nuked.
-        errorTypes.push(recordTypeString);
-        continue;
-      }
-
-      SC.Logger.log('Found %@ cached %@ records.'.fmt(records.length, recordTypeString));
-      store.loadRecords(recordType, records, undefined, NO);
-      this._beenFetched[recordTypeString] = YES;
+      
+      this.invokeLater(later,250);
       handledTypes.push(recordTypeString);
+      
     }
 
     // Let others know that this query was handled by the LDS.  This allows any data sources that
@@ -113,7 +122,6 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
     if (handledTypes.length === 0 && errorTypes.length === 0) {
       return NO;
     } else {
-      store.dataSourceDidFetchQuery(query);
       return SC.MIXED_STATE;
     }
   },
