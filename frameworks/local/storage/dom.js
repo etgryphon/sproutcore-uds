@@ -39,7 +39,7 @@ SCUDS.DOMStorageAdapter = SC.Object.extend(
     var key = this.localStorageKey, results;
     try {
       var data = window.localStorage.getItem(key) || '';
-      data = data.replace(/\"[0-9]+\":/gi,''); //turn it into an array reduce lines for ie...
+      data = data.replace(/\"__dom__[\w\-]+\":/gi,''); //turn it into an array reduce lines for ie...
       results = SC.json.decode('['+data.substring(1,data.length-1)+']') || [];
     } catch(e) {
       console.warn('Error during deserialization of records; clearing the cache.');
@@ -110,7 +110,7 @@ SCUDS.DOMStorageAdapter = SC.Object.extend(
     }
     else{
       for (var i = 0; i < length; i++) {
-        data[array[i][this.contentItemKey]] = array[i]; //TODO: optimize ie perf
+        data["__dom__" + array[i][this.contentItemKey]] = array[i]; //TODO: optimize ie perf
       }
       this._serializeHash(data);
     }
