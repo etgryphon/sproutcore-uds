@@ -70,58 +70,24 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
     // Get the record type(s).
     var recordTypes = query.get('recordTypes') || query.get('recordType');
     if (SC.typeOf(recordTypes) === SC.T_CLASS) recordTypes = [recordTypes];
-    
-    //This function handles pulling the data out of localStorage
-    //and pushing it into the store it is invoked later so it does
-    //not block any following remote calls...
-    var later = function(rt, rts){
-      //SC.Benchmark.start('later');
-      
-      // Get all records of specified type from the local cache.
-      if(!that._beenFetched[rts]){
-        var records = ds.getAll();
-        if (SC.typeOf(records) !== SC.T_ARRAY) {
-          // Something bad happened and the cache was likely nuked.
-          errorTypes.push(rts);
-          return;
-        }
-
-        SC.Logger.log('Found %@ cached %@ records in LDS.'.fmt(records.length, rts));
-        store.loadRecords(rt, records, undefined, NO);
-        that._beenFetched[rts] = YES;
-      }
-      //SC.Benchmark.end('later');
-    };
-    
-    
+        
     // Handle each record type (may only be one).
     for (var i = 0, len = recordTypes.length; i < len; i++) {
       recordType = recordTypes[i];
       recordTypeString = SC.browser.msie ? recordType._object_className : recordType.toString();
-
       ds = this._getDataStoreForRecordType(recordType);
-
       if (!ds) continue;
-
-      if (this._beenFetched[recordTypeString]) {
-        handledTypes.push(recordTypeString);
-        continue;
-      }
-      SC.Logger.log('Retrieving %@ records from local cache...'.fmt(recordTypeString));
-      
-      this.invokeLater(function(){
-        later(recordType, recordTypeString);
-      },250);
       handledTypes.push(recordTypeString);
-      
     }
 
+    this.invokeLater(function(){
+      that._fetchDataAndLoadRecords(recordTypes, store, query);
+    },250);
+    
+    console.log(handledTypes);
     // Let others know that this query was handled by the LDS.  This allows any data sources that
     // appear later in the chain to act accordingly.
     query.set('handledByLDS', handledTypes);
-
-    // If there were errors, let others know about that too.
-    query.set('errorsInLDS', errorTypes);
 
     // Don't stop here in the cascade chain.
     if (handledTypes.length === 0 && errorTypes.length === 0) {
@@ -129,6 +95,41 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
     } else {
       return SC.MIXED_STATE;
     }
+  },
+  //This function handles pulling the data out of localStorage
+  //and pushing it into the store it is invoked later so it does
+  //not block any following remote calls...
+  _fetchDataAndLoadRecords: function(recordTypes, store, query){
+    var recordType, recordTypeString, ds, records;
+    
+    recordType = recordTypes.pop();
+    recordTypeString = SC.browser.msie ? recordType._object_className : recordType.toString();
+
+    ds = this._getDataStoreForRecordType(recordType);
+    
+    if(ds && !this._beenFetched[recordTypeString]){
+      records = ds.getAll();
+      
+      // Something bad happened and the cache was likely nuked.
+      if (SC.typeOf(records) !== SC.T_ARRAY) {
+        var errorTypes = query.get('errorsInLDS') || [];
+        errorTypes.push(recordTypeString);
+        // If there were errors, let others know about that too.
+        query.set('errorsInLDS', errorTypes);
+        return;
+      }
+
+      SC.Logger.log('Found %@ cached %@ records in LDS.'.fmt(records.length, recordTypeString));
+      store.loadRecords(recordType, records, undefined, NO);
+      this._beenFetched[recordTypeString] = YES;
+    }
+    if(recordTypes.get('length') > 0) {
+      var that = this;
+      this.invokeLater(function(){
+        that._fetchDataAndLoadRecords(recordTypes, store, query);
+      }, 250);
+    }
+    
   },
 
   /**
