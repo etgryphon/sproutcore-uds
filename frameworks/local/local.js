@@ -66,7 +66,7 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
    */
   fetch: function(store, query) {
     var handledTypes = [];
-    var errorTypes = [], records, recordType, recordTypeString, ds;
+    var errorTypes = [], recordType, recordTypeString, ds, that = this;
     // Get the record type(s).
     var recordTypes = query.get('recordTypes') || query.get('recordType');
     if (SC.typeOf(recordTypes) === SC.T_CLASS) recordTypes = [recordTypes];
@@ -74,21 +74,21 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
     //This function handles pulling the data out of localStorage
     //and pushing it into the store it is invoked later so it does
     //not block any following remote calls...
-    var later = function(){
+    var later = function(rt, rts){
       //SC.Benchmark.start('later');
       
       // Get all records of specified type from the local cache.
-      if(!this._beenFetched[recordTypeString]){
-        records = ds.getAll();
+      if(!that._beenFetched[rts]){
+        var records = ds.getAll();
         if (SC.typeOf(records) !== SC.T_ARRAY) {
           // Something bad happened and the cache was likely nuked.
-          errorTypes.push(recordTypeString);
+          errorTypes.push(rts);
           return;
         }
 
-        SC.Logger.log('Found %@ cached %@ records.'.fmt(records.length, recordTypeString));
-        store.loadRecords(recordType, records, undefined, NO);
-        this._beenFetched[recordTypeString] = YES;
+        SC.Logger.log('Found %@ cached %@ records in LDS.'.fmt(records.length, rts));
+        store.loadRecords(rt, records, undefined, NO);
+        that._beenFetched[rts] = YES;
       }
       //SC.Benchmark.end('later');
     };
@@ -109,7 +109,9 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
       }
       SC.Logger.log('Retrieving %@ records from local cache...'.fmt(recordTypeString));
       
-      this.invokeLater(later,250);
+      this.invokeLater(function(){
+        later(recordType, recordTypeString);
+      },250);
       handledTypes.push(recordTypeString);
       
     }
