@@ -16,6 +16,8 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
   version: '0.1',
   wantsNotification: YES,
 
+  _dataNuked: NO,
+
   _dataStores: {},
 
   /*
@@ -70,13 +72,14 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
     // Get the record type(s).
     var recordTypes = query.get('recordTypes') || query.get('recordType');
     if (SC.typeOf(recordTypes) === SC.T_CLASS) recordTypes = [recordTypes];
-        
+
     // Handle each record type (may only be one).
     for (var i = 0, len = recordTypes.length; i < len; i++) {
       recordType = recordTypes[i];
       recordTypeString = SC.browser.msie ? recordType._object_className : recordType.toString();
       ds = this._getDataStoreForRecordType(recordType);
       if (!ds) continue;
+
       handledTypes.push(recordTypeString);
     }
 
@@ -84,11 +87,16 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
       that._fetchDataAndLoadRecords(recordTypes, store, query);
     },250);
     
-    console.log(handledTypes);
     // Let others know that this query was handled by the LDS.  This allows any data sources that
     // appear later in the chain to act accordingly.
     query.set('handledByLDS', handledTypes);
-
+    
+    // Also let others know if the data was nuked.
+    if (this._dataNuked) {
+      query.set('dataNukedInLDS', YES);
+      this._dataNuked = NO;
+    }
+    
     // Don't stop here in the cascade chain.
     if (handledTypes.length === 0 && errorTypes.length === 0) {
       return NO;
@@ -145,9 +153,9 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
     // Short circuit if there's nothing to load.
     if (len === 0) return;
 
-    ds.save(dataHashes);
-
-    SC.Logger.log('Wrote %@ %@ records to local cache.'.fmt(len, recordType.toString()));
+    if (this._save(ds, dataHashes)) {
+      SC.Logger.log('Wrote %@ %@ records to local cache.'.fmt(len, recordType.toString()));
+    }
   },
 
   retrieveRecord: function(store, storeKey, params) {
@@ -207,8 +215,9 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
   notifyDidLoadRecord: function(store, recordType, dataHash, id) {
     var ds = this._getDataStoreForRecordType(recordType);    
     if (!ds) return;
-    ds.save(dataHash);
-    SC.Logger.log('Wrote %@:%@ to local cache.'.fmt(recordType.toString(), id));
+    if (this._save(ds, dataHash)) {
+      SC.Logger.log('Wrote %@:%@ to local cache.'.fmt(recordType.toString(), id));
+    }
   },
 
   /**
@@ -218,8 +227,9 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
   notifyDidWriteRecord: function(store, recordType, dataHash, id) {
     var ds = this._getDataStoreForRecordType(recordType);    
     if (!ds) return;
-    ds.save(dataHash);
-    SC.Logger.log('Wrote %@:%@ to local cache.'.fmt(recordType.toString(), id));
+    if (this._save(ds, dataHash)) {
+      SC.Logger.log('Wrote %@:%@ to local cache.'.fmt(recordType.toString(), id));
+    }
   },
   
   /**
@@ -238,7 +248,6 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
    */
   nukeType: function(recordType) {
     var ds = this._getDataStoreForRecordType(recordType);
-    console.log('nukeing record type');
     ds.nuke();
   },
 
@@ -260,7 +269,27 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
     this._datastores = {};
 
     SC.Logger.log('Cleared all data in local cache.');
+  },
+
+  /*
+   * Wrapper for save() on the storage adapter.
+   *
+   * Nukes all of the data in the local storage if the save fails for any reason.
+   */
+  _save: function(ds, data) {
+    try {
+      ds.save(data);
+      return YES;
+    } catch(e) {
+      // Something really bad happened (like the browser ran out of memory in the local storage),
+      // so nuke everything and start over.
+      SC.Logger.warn('Ran out of memory in local cache; clearing...');
+      this.nuke();
+      this._dataNuked = YES;
+      return NO;
+    }
   }
+
 });
 
 // Class-level datastores.
