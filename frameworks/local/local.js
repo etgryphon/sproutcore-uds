@@ -76,17 +76,20 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
     //not block any following remote calls...
     var later = function(){
       //SC.Benchmark.start('later');
+      
       // Get all records of specified type from the local cache.
-      records = ds.getAll();
-      if (SC.typeOf(records) !== SC.T_ARRAY) {
-        // Something bad happened and the cache was likely nuked.
-        errorTypes.push(recordTypeString);
-        return;
-      }
+      if(!this._beenFetched[recordTypeString]){
+        records = ds.getAll();
+        if (SC.typeOf(records) !== SC.T_ARRAY) {
+          // Something bad happened and the cache was likely nuked.
+          errorTypes.push(recordTypeString);
+          return;
+        }
 
-      SC.Logger.log('Found %@ cached %@ records.'.fmt(records.length, recordTypeString));
-      store.loadRecords(recordType, records, undefined, NO);
-      this._beenFetched[recordTypeString] = YES;
+        SC.Logger.log('Found %@ cached %@ records.'.fmt(records.length, recordTypeString));
+        store.loadRecords(recordType, records, undefined, NO);
+        this._beenFetched[recordTypeString] = YES;
+      }
       //SC.Benchmark.end('later');
     };
     
