@@ -73,7 +73,7 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
     var recordTypes = query.get('recordTypes') || query.get('recordType');
     if (SC.typeOf(recordTypes) === SC.T_CLASS) recordTypes = [recordTypes];
 
-    // Handle each record type (may only be one).
+    // Check to see if we handle any of the record types.
     for (var i = 0, len = recordTypes.length; i < len; i++) {
       recordType = recordTypes[i];
       recordTypeString = SC.browser.msie ? recordType._object_className : recordType.toString();
@@ -82,26 +82,25 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
       handledTypes.push(recordTypeString);
     }
 
-    this.invokeLater(function(){
-      that._fetchDataAndLoadRecords(recordTypes, store, query);
-    }, 250);
-    
+    if (handledTypes.length === 0) return NO;
+
     // Let others know that this query was handled by the LDS.  This allows any data sources that
     // appear later in the chain to act accordingly.
     query.set('handledByLDS', handledTypes);
-    
+
     // Also let others know if the data was nuked.
     if (this._dataNuked) {
       query.set('dataNukedInLDS', YES);
       this._dataNuked = NO;
     }
+
+    // Invoke the fetch/load mechanism later on so that we don't block anything.
+    this.invokeLater(function(){
+      that._fetchDataAndLoadRecords(recordTypes, store, query);
+    }, 250);
     
     // Don't stop here in the cascade chain.
-    if (handledTypes.length === 0) {
-      return NO;
-    } else {
-      return SC.MIXED_STATE;
-    }
+    return SC.MIXED_STATE;
   },
 
   /*
