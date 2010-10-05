@@ -67,8 +67,8 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
    * Called on behalf of store.find(query)
    */
   fetch: function(store, query) {
-    var handledTypes = [];
-    var errorTypes = [], recordType, recordTypeString, ds, that = this;
+    var handledTypes = [], recordType, recordTypeString, ds, that = this;
+
     // Get the record type(s).
     var recordTypes = query.get('recordTypes') || query.get('recordType');
     if (SC.typeOf(recordTypes) === SC.T_CLASS) recordTypes = [recordTypes];
@@ -79,7 +79,6 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
       recordTypeString = SC.browser.msie ? recordType._object_className : recordType.toString();
       ds = this._getDataStoreForRecordType(recordType);
       if (!ds) continue;
-
       handledTypes.push(recordTypeString);
     }
 
@@ -98,7 +97,7 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
     }
     
     // Don't stop here in the cascade chain.
-    if (handledTypes.length === 0 && errorTypes.length === 0) {
+    if (handledTypes.length === 0) {
       return NO;
     } else {
       return SC.MIXED_STATE;
