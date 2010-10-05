@@ -11,6 +11,8 @@ sc_require('lib/Lawnchair');
  * @version 0.1
  * @since 0.1
  */
+SCUDS.IE_CHUNK_SIZE = 25;
+ 
 SCUDS.LocalDataSource = SC.DataSource.extend({
   
   version: '0.1',
@@ -110,7 +112,7 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
    * to do.
    */
   _fetchDataAndLoadRecords: function(recordTypes, store, query){
-    var recordType = recordTypes.pop();
+    var recordType = recordTypes.pop(), that = this;
     var recordTypeString = SC.browser.msie ? recordType._object_className : recordType.toString();
     var ds = this._getDataStoreForRecordType(recordType);
     
@@ -128,17 +130,49 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
       }
 
       SC.Logger.log('Found %@ cached %@ records in local cache.'.fmt(records.length, recordTypeString));
-      store.loadRecords(recordType, records, undefined, NO);
-      this._beenFetched[recordTypeString] = YES;
+       if (SC.browser.msie) {
+          setTimeout(function() {
+            that._chunkedLoad(records, recordType, store, function() {
+              that._beenFetched[recordTypeString] = YES;
+            });
+          }, 150);
+
+        } 
+        else {
+          store.loadRecords(recordType, records, undefined, NO);
+          this._beenFetched[recordTypeString] = YES;
+        }
+      
     }
 
     if (recordTypes.get('length') > 0) {
-      var that = this;
       this.invokeLater(function(){
         that._fetchDataAndLoadRecords(recordTypes, store, query);
       }, 250);
     }
   },
+  
+  _chunkedLoad: function(records, recordType, store, callback) {
+    var that = this, currentSet, nextSet;
+
+    if (records.get('length') > SCUDS.IE_CHUNK_SIZE) {
+      currentSet = records.slice(0, SCUDS.IE_CHUNK_SIZE);
+      nextSet = records.slice(SCUDS.IE_CHUNK_SIZE, records.get('length'));
+    } else {
+      currentSet = records;
+    }
+
+    store.loadRecords(recordType, records, undefined, NO);
+    if (nextSet){
+      setTimeout(function(){
+        that._chunkedLoad(nextSet, recordType, store, callback);
+      },150);
+    }
+    else {
+      if (callback) callback();
+    }
+  },
+  
 
   /**
    * Called by the notifying store when multiple records are loaded outside the context of this
