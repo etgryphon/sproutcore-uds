@@ -84,7 +84,7 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
 
     this.invokeLater(function(){
       that._fetchDataAndLoadRecords(recordTypes, store, query);
-    },250);
+    }, 250);
     
     // Let others know that this query was handled by the LDS.  This allows any data sources that
     // appear later in the chain to act accordingly.
@@ -103,20 +103,22 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
       return SC.MIXED_STATE;
     }
   },
-  //This function handles pulling the data out of localStorage
-  //and pushing it into the store it is invoked later so it does
-  //not block any following remote calls...
-  _fetchDataAndLoadRecords: function(recordTypes, store, query){
-    var recordType, recordTypeString, ds, records;
-    
-    recordType = recordTypes.pop();
-    recordTypeString = SC.browser.msie ? recordType._object_className : recordType.toString();
 
-    ds = this._getDataStoreForRecordType(recordType);
+  /*
+   * Pulls the data out of local storage and pushes it into the store.
+   *
+   * Invoked later so that it doesn't block anything that happens after fetch() does what it needs
+   * to do.
+   */
+  _fetchDataAndLoadRecords: function(recordTypes, store, query){
+    var recordType = recordTypes.pop();
+    var recordTypeString = SC.browser.msie ? recordType._object_className : recordType.toString();
+    var ds = this._getDataStoreForRecordType(recordType);
     
-    if(ds && !this._beenFetched[recordTypeString]){
-      records = ds.getAll();
-      
+    if (ds && !this._beenFetched[recordTypeString]) {
+      var records = ds.getAll();
+
+      // TODO: [SE, MB] It's too late at this point to acknowledge the errors in the RDS.
       // Something bad happened and the cache was likely nuked.
       if (SC.typeOf(records) !== SC.T_ARRAY) {
         var errorTypes = query.get('errorsInLDS') || [];
@@ -130,13 +132,13 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
       store.loadRecords(recordType, records, undefined, NO);
       this._beenFetched[recordTypeString] = YES;
     }
-    if(recordTypes.get('length') > 0) {
+
+    if (recordTypes.get('length') > 0) {
       var that = this;
       this.invokeLater(function(){
         that._fetchDataAndLoadRecords(recordTypes, store, query);
       }, 250);
     }
-    
   },
 
   /**
