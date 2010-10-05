@@ -101,7 +101,7 @@ SCUDS.DOMStorageAdapter = SC.Object.extend(
   _saveAll: function(array) {
     var data = this._deserializeHash();
     var length = array.length;
-    if(length > 10 /*&& SC.browser.msie*/){ //only do this for msie
+    if(length > 10 && SC.browser.msie){ //only do this for msie
       var startIndex = 0, that = this;
         setTimeout(function(){
           that._chunkSave(data, array, startIndex, length);
