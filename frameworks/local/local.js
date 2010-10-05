@@ -128,7 +128,7 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
         return;
       }
 
-      SC.Logger.log('Found %@ cached %@ records in LDS.'.fmt(records.length, recordTypeString));
+      SC.Logger.log('Found %@ cached %@ records in local cache.'.fmt(records.length, recordTypeString));
       store.loadRecords(recordType, records, undefined, NO);
       this._beenFetched[recordTypeString] = YES;
     }
