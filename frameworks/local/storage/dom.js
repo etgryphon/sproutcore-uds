@@ -101,12 +101,11 @@ SCUDS.DOMStorageAdapter = SC.Object.extend(
   _saveAll: function(array) {
     var data = this._deserializeHash();
     var length = array.length;
-    
-    if(length > 10 && SC.browser.msie){ //only do this for msie
+    if(length > 10 /*&& SC.browser.msie*/){ //only do this for msie
       var startIndex = 0, that = this;
-      this.invokeLater(function(){
-        that._chunkSave(data, array, startIndex, length);
-      });
+        setTimeout(function(){
+          that._chunkSave(data, array, startIndex, length);
+        }, 150);
     }
     else{
       for (var i = 0; i < length; i++) {
@@ -117,19 +116,18 @@ SCUDS.DOMStorageAdapter = SC.Object.extend(
   },
   
   _chunkSave: function(data, array, startIndex, length){
-    var i;
-    startIndex+=10;
-    if(startIndex < length){
-      for(i = startIndex-10; i < startIndex; i++){
+    var i, newStartIndex = startIndex+10;
+    if(newStartIndex < length){
+      for(i = newStartIndex-10; i < newStartIndex; i++){
         data[array[i][this.contentItemKey]] = array[i]; 
       }
       var that = this;
-      this.invokeLater(function(){
-        that._chunkSave(data,array,startIndex,length);
-      },5);
+      setTimeout(function(){
+        that._chunkSave(data,array,newStartIndex,length);
+      }, 150);
     }
     else{
-      for(i = startIndex-10; i < length; i++){
+      for(i = newStartIndex-10; i < length; i++){
         data[array[i][this.contentItemKey]] = array[i]; 
       }
       this._serializeHash(data);
