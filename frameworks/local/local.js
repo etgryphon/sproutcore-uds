@@ -241,18 +241,18 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
    */
   nuke: function() {
     // Nuke each datastore.
-    var stores = this._datastores;
+    var stores = this._dataStores;
     if (SC.typeOf(stores) !== SC.T_HASH) return;
-
+    
     for (var name in stores) {
       if(stores.hasOwnProperty(name)){
         if (stores[name] && stores[name].nuke) stores[name].nuke();
       }
     }
-
+    
     // Reset the data structure.
-    this._datastores = {};
-
+    this._dataStores = {};
+    
     SC.Logger.log('Cleared all data in local cache.');
   }
 });
