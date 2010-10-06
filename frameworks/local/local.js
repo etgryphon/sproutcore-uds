@@ -113,8 +113,10 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
    */
   _fetchDataAndLoadRecords: function(recordTypes, store, query){
     var recordType = recordTypes.pop(), that = this;
-    var recordTypeString = SC.browser.msie ? recordType._object_className : recordType.toString();
     var ds = this._getDataStoreForRecordType(recordType);
+    
+    var recordTypeString;
+    if (recordType) recordTypeString = SC.browser.msie ? recordType._object_className : recordType.toString();
     
     if (ds && !this._beenFetched[recordTypeString]) {
       var records = ds.getAll();
