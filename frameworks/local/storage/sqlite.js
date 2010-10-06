@@ -67,12 +67,18 @@ SCUDS.SQLiteStorageAdaptor = SC.Object.extend({
     tableName = tableName.replace(/\./g, '');
     this.set('tableName', tableName);
     
-    if (!tableName) SC.Logger.error('No tableName provided!');
-    if (!db) SC.Logger.error('Database could not be found/generated on SCUDS.SQLiteStorageAdaptor, are you sure this browser supports it?');
+    if (!tableName) {
+      SC.Logger.warn('No tableName provided!');
+      return;
+    }
+    if (!db) {
+      SC.Logger.warn('Database could not be found/generated on SCUDS.SQLiteStorageAdaptor, are you sure this browser supports it?');
+      return;
+    }
     
     db.transaction(function(t) {
       t.executeSql(
-        'CREATE TABLE IF NOT EXISTS ' + tableName + '(id STRING NOT NULL PRIMARY KEY, value BLOB NOT NULL);',
+        'CREATE TABLE IF NOT EXISTS ' + tableName + ' (id STRING NOT NULL PRIMARY KEY, value BLOB NOT NULL);',
         [],
         function() {},
         this._errorHandler
@@ -156,9 +162,11 @@ SCUDS.SQLiteStorageAdaptor = SC.Object.extend({
           this._errorHandler
         );
       }, this._transactionErrorHandler);
+      
+      return YES;
     }
     
-    return ret;
+    return NO;
   },
   
   /** @private
@@ -241,7 +249,7 @@ SCUDS.SQLiteStorageAdaptor = SC.Object.extend({
       this.getHash(hashes[idx], f);
     }
     
-    return NO;
+    return YES;
   },
   
   _didSave: function(hash) {
@@ -333,8 +341,8 @@ SCUDS.SQLiteStorageAdaptor = SC.Object.extend({
     SC.Logger.error('Transaction error: %@ (code %@)'.fmt(error.message, error.code));
   },
   
-  _transactionErrorHandler: function() {
-    SC.Logger.log("I can haz error?");
+  _transactionErrorHandler: function(error) {
+    SC.Logger.log("I can haz error?", error.message, error.code);
   },
   
   _deserializeHash: function(str){
