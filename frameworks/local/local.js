@@ -1,5 +1,6 @@
 /*globals  SCUDS Lawnchair*/
 sc_require('storage/dom');
+sc_require('storage/sqlite');
 sc_require('lib/Lawnchair');
 
 /**
@@ -54,13 +55,30 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
    */
   _getDataStoreForRecordType: function(recordType){
     if (!this._isRecordTypeSupported(recordType)) return NO;
-    recordType = SC.browser.msie ? recordType._object_className : recordType.toString();
-    var ret = this._dataStores[recordType] ||
-      SCUDS.DOMStorageAdapter.create({ localStorageKey: recordType + this.get('version') });
+    var ret = this._dataStores[recordType] || this.generateDataSource(recordType);
     this._dataStores[recordType] = ret;
     return ret;
   },
-
+  
+  generateDataSource: function(recordType) {
+    var storageMethod = this.get('storageMethod'),
+        recordTypeName = SC.browser.msie ? recordType._object_className : recordType.toString();
+    
+    if (SC.none(storageMethod)) storageMethod = 'dom';
+    
+    if (storageMethod === 'dom') {
+      return SCUDS.DOMStorageAdaptor.create({localStorageKey: recordTypeName + this.get('version')});
+    } else if (storageMethod === 'sqlite') {
+      return SCUDS.SQLiteStorageAdaptor.create({
+        dataSource: this,
+        recordType: recordType,
+        tableName: recordTypeName + this.get('version')
+      });
+      
+    }
+    return null;
+  },
+  
   /**
    * Called on behalf of store.find(query)
    */
@@ -77,17 +95,7 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
     var later = function(){
       //SC.Benchmark.start('later');
       // Get all records of specified type from the local cache.
-      records = ds.getAll();
-      if (SC.typeOf(records) !== SC.T_ARRAY) {
-        // Something bad happened and the cache was likely nuked.
-        errorTypes.push(recordTypeString);
-        return;
-      }
-
-      SC.Logger.log('Found %@ cached %@ records.'.fmt(records.length, recordTypeString));
-      store.loadRecords(recordType, records, undefined, NO);
-      this._beenFetched[recordTypeString] = YES;
-      //SC.Benchmark.end('later');
+      records = ds.getAll(store, query);
     };
     
     
@@ -125,7 +133,21 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
       return SC.MIXED_STATE;
     }
   },
-
+  
+  dataStoreDidGetHashes: function(hashes, store, query) {
+    var recordType = query.get('recordType'),
+        recordTypeString = SC.browser.msie ? recordType._object_className : recordType.toString();
+    
+    if (SC.typeOf(hashes) === SC.T_ARRAY) {
+      SC.Logger.log('Found %@ cached %@ records.'.fmt(hashes.length, recordTypeString));
+      store.loadRecords(recordType, hashes, undefined, NO);
+      this._beenFetched[recordTypeString] = YES;
+      
+      return YES;
+    }
+    return NO;
+  },
+  
   /**
    * Called by the notifying store when multiple records are loaded outside the context of this
    * data source.
