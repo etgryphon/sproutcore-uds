@@ -379,13 +379,12 @@ SCUDS.SQLiteStorageAdaptor.mixin({
   
   getDatabase: function() {
     if (SCUDS.SQLiteStorageAdaptor._db) return SCUDS.SQLiteStorageAdaptor._db;
-    return null;
     
     try {
       if (!window.openDatabase) {
         return null;
       } else {
-        SCUDS.SQLiteStorageAdaptor._db = window.openDatabase('SCUDS', '0.1', 'SCUDS', 50000000);
+        SCUDS.SQLiteStorageAdaptor._db = window.openDatabase('SCUDS', '0.1', 'SCUDS', 65536);
         return SCUDS.SQLiteStorageAdaptor._db;
       }
     } catch (e) {
