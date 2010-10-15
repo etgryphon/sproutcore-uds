@@ -131,18 +131,18 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
       }
 
       SC.Logger.log('Found %@ cached %@ records in local cache.'.fmt(records.length, recordTypeString));
-       if (SC.browser.msie) {
-          setTimeout(function() {
-            that._chunkedLoad(records, recordType, store, function() {
-              that._beenFetched[recordTypeString] = YES;
-            });
-          }, 150);
-
-        } 
-        else {
+       // if (SC.browser.msie) {
+       //    setTimeout(function() {
+       //      that._chunkedLoad(records, recordType, store, function() {
+       //        that._beenFetched[recordTypeString] = YES;
+       //      });
+       //    }, 150);
+       // 
+       //  } 
+       //  else {
           store.loadRecords(recordType, records, undefined, NO);
           this._beenFetched[recordTypeString] = YES;
-        }
+        // }
       
     }
 
