@@ -175,7 +175,9 @@ SCUDS.SQLiteStorageAdaptor = SC.Object.extend({
   _didGetAll: function(hashes, store, query) {
     var dataSource = this.get('dataSource');
     if (dataSource && typeof dataSource.dataStoreDidGetHashes === SC.T_FUNCTION) {
+      SC.RunLoop.begin();
       dataSource.dataStoreDidGetHashes(hashes, store, query);
+      SC.RunLoop.end();
     }
   },
   
