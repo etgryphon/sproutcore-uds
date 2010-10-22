@@ -388,7 +388,7 @@ SCUDS.SQLiteStorageAdaptor.mixin({
       if (!window.openDatabase) {
         return null;
       } else {
-        SCUDS.SQLiteStorageAdaptor._db = window.openDatabase('SCUDS', '0.1', 'SCUDS', 65536);
+        SCUDS.SQLiteStorageAdaptor._db = window.openDatabase('SCUDS', '0.1', 'SCUDS', 2000000);
         return SCUDS.SQLiteStorageAdaptor._db;
       }
     } catch (e) {
