@@ -229,24 +229,26 @@ SCUDS.SQLiteStorageAdaptor = SC.Object.extend({
         tableName = this.get('tableName'),
         primaryKey = this.get('primaryKey'),
         that = this,
-        idx, len, hash, id, f;
+        idx, len, hash, id, callback;
     
     if (!db) return NO;
     if (!SC.isArray(hashes)) hashes = [hashes];
     
-    f = function(result, searchedObject) {
-      if (result !== null && result !== undefined) {
-        this.update(searchedObject, that._didSave);
-      } else {
-        this.insert(searchedObject, that._didSave);
-      }
-    };
+    callback = this._didSave;
     
     len = hashes.get('length');
     for (idx = 0; idx < len; idx++) {
-      // we use get to see if the record is already in the database
-      // and our callback handles whether to use update or insert
-      this.getHash(hashes[idx], f);
+      hash = hashes[idx];
+      db.transaction(function(t) {
+        t.executeSql(
+          'REPLACE INTO ' + tableName + '(id, value) VALUES(?, ?);',
+          [String(hash[primaryKey]), that._serializeHash(hash)],
+          function() {
+            callback.call(that, hash);
+          },
+          that._errorHandler
+        );
+      }, this._transactionErrorHandler);
     }
     
     return YES;
