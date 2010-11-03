@@ -238,20 +238,24 @@ SCUDS.SQLiteStorageAdaptor = SC.Object.extend({
     
     callback = this._didSave;
     
-    len = hashes.get('length');
-    for (idx = 0; idx < len; idx++) {
-      hash = hashes[idx];
-      db.transaction(function(t) {
+    db.transaction(function(t) {
+      len = hashes.get('length');
+      for (idx = 0; idx < len; idx++) {
+        hash = hashes[idx];
         t.executeSql(
           'REPLACE INTO ' + tableName + '(id, value) VALUES(?, ?);',
           [String(hash[primaryKey]), that._serializeHash(hash)],
-          function() {
+          function(transaction, result) {
+            /*
+              FIXME hash is actually the last hash in the list... fail
+                      we can't really inline this, we should use notification
+            */
             callback.call(that, hash);
           },
           that._errorHandler
         );
-      }, this._transactionErrorHandler);
-    }
+      }
+    }, this._transactionErrorHandler);
     
     return YES;
   },
