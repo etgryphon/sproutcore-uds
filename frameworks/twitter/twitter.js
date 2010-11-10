@@ -72,7 +72,7 @@ SCUDS.TwitterDataSource = SC.DataSource.extend(
   
   retrieveRecord: function(store, storeKey) {
     
-    // TODO: Add handlers to retrieve an individual record's contents
+    // TODO: [EG] Add handlers to retrieve an individual record's contents
     // call store.dataSourceDidComplete(storeKey) when done.
     
     return NO ; // return YES if you handled the storeKey
@@ -88,7 +88,7 @@ SCUDS.TwitterDataSource = SC.DataSource.extend(
   
   updateRecord: function(store, storeKey) {
     
-    // TODO: Add handlers to submit modified record to the data source
+    // TODO: [EG] Add handlers to submit modified record to the data source
     // call store.dataSourceDidComplete(storeKey) when done.
 
     return NO ; // return YES if you handled the storeKey
@@ -96,7 +96,7 @@ SCUDS.TwitterDataSource = SC.DataSource.extend(
   
   destroyRecord: function(store, storeKey) {
     
-    // TODO: Add handlers to destroy records on the data source.
+    // TODO: [EG] Add handlers to destroy records on the data source.
     // call store.dataSourceDidDestroy(storeKey) when done
     
     return NO ; // return YES if you handled the storeKey

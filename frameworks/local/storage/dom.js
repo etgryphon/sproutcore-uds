@@ -109,7 +109,7 @@ SCUDS.DOMStorageAdapter = SC.Object.extend(
     }
     else{
       for (var i = 0; i < length; i++) {
-        data[array[i][this.contentItemKey]] = array[i]; //TODO: optimize ie perf
+        data[array[i][this.contentItemKey]] = array[i]; //TODO: [MB] optimize ie perf
       }
       this._serializeHash(data);
     }
