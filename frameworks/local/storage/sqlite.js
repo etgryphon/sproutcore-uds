@@ -62,7 +62,8 @@ SCUDS.SQLiteStorageAdaptor = SC.Object.extend({
     sc_super();
     
     var tableName = this.get('tableName'),
-        db = SCUDS.SQLiteStorageAdaptor.getDatabase();
+        db = SCUDS.SQLiteStorageAdaptor.getDatabase(),
+        that = this;
     
     tableName = tableName.replace(/\./g, '');
     this.set('tableName', tableName);
@@ -81,7 +82,7 @@ SCUDS.SQLiteStorageAdaptor = SC.Object.extend({
         'CREATE TABLE IF NOT EXISTS ' + tableName + ' (id STRING NOT NULL PRIMARY KEY, value BLOB NOT NULL);',
         [],
         function() {},
-        this._errorHandler
+        that._errorHandler
       );
     }, this._transactionErrorHandler);
   },
@@ -115,7 +116,7 @@ SCUDS.SQLiteStorageAdaptor = SC.Object.extend({
             }
             callback.call(that, o, hashOrId);
           },
-          this._errorHandler
+          that._errorHandler
         );
       }, this._transactionErrorHandler);
       
@@ -159,7 +160,7 @@ SCUDS.SQLiteStorageAdaptor = SC.Object.extend({
             }
             callback.call(that, ret, store, query);
           },
-          this._errorHandler
+          that._errorHandler
         );
       }, this._transactionErrorHandler);
       
@@ -347,6 +348,7 @@ SCUDS.SQLiteStorageAdaptor = SC.Object.extend({
   
   _errorHandler: function(transaction, error) {
     SC.Logger.error('Transaction error: %@ (code %@)'.fmt(error.message, error.code));
+    return false;
   },
   
   _transactionErrorHandler: function(error) {
