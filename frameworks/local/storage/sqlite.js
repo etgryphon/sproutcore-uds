@@ -84,7 +84,7 @@ SCUDS.SQLiteStorageAdaptor = SC.Object.extend({
         function() {},
         that._errorHandler
       );
-    }, this._transactionErrorHandler);
+    }, function(error) { that._transactionErrorHandler.call(that, error, "create table"); });
   },
   
   /**
@@ -118,7 +118,7 @@ SCUDS.SQLiteStorageAdaptor = SC.Object.extend({
           },
           that._errorHandler
         );
-      }, this._transactionErrorHandler);
+      }, function(error) { that._transactionErrorHandler.call(that, error, "getHash"); });
       
       return YES;
     }
@@ -162,7 +162,7 @@ SCUDS.SQLiteStorageAdaptor = SC.Object.extend({
           },
           that._errorHandler
         );
-      }, this._transactionErrorHandler);
+      }, function(error) { that._transactionErrorHandler.call(that, error, "getAll", tableName); });
       
       return YES;
     }
@@ -204,7 +204,7 @@ SCUDS.SQLiteStorageAdaptor = SC.Object.extend({
           },
           that._errorHandler
         );
-      }, this._transactionErrorHandler);
+      }, function(error) { that._transactionErrorHandler.call(that, error, "insert"); });
       
       return YES;
     }
@@ -256,7 +256,7 @@ SCUDS.SQLiteStorageAdaptor = SC.Object.extend({
           that._errorHandler
         );
       }
-    }, this._transactionErrorHandler);
+    }, function(error) { that._transactionErrorHandler.call(that, error, "save"); });
     
     return YES;
   },
@@ -290,7 +290,7 @@ SCUDS.SQLiteStorageAdaptor = SC.Object.extend({
           },
           that._errorHandler
         );
-      }, this._transactionErrorHandler);
+      }, function(error) { that._transactionErrorHandler.call(that, error, "update"); });
       
       return YES;
     }
@@ -347,12 +347,12 @@ SCUDS.SQLiteStorageAdaptor = SC.Object.extend({
   // 
   
   _errorHandler: function(transaction, error) {
-    SC.Logger.error('Transaction error: %@ (code %@)'.fmt(error.message, error.code));
+    SC.Logger.log('Transaction error: %@ (code %@)'.fmt(error.message, error.code));
     return false;
   },
   
-  _transactionErrorHandler: function(error) {
-    SC.Logger.log("I can haz error?", error.message, error.code);
+  _transactionErrorHandler: function(error, action, tableName) {
+    SC.Logger.log("I can haz error during %@ on %@?".fmt(action, tableName), error.message, error.code);
   },
   
   _deserializeHash: function(str){
