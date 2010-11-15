@@ -115,5 +115,35 @@ SCUDS.LocalStorageAdapterFactory = SC.Object.create({
     var adapter = this.getAdapterClass().create({ localStorageKey: key });
     this._cachedAdapters[key] = adapter;
     return adapter;
+  },
+
+  /**
+   * Returns all of the storage adapters created by this factory as an array.
+   */
+  getAllAdapters: function() {
+    var adapters;
+
+    for (var key in this._cachedAdapters) {
+      if (this._cachedAdapters.hasOwnProperty(key)) {
+        if (!adapters) adapters = [];
+        adapters.push(this._cachedAdapters[key]);
+      }
+    }
+
+    return adapters;
+  },
+
+  /**
+   * Nukes all of the storage adapters created by this factory.
+   */
+  nukeAllAdapters: function() {
+    var adapters = this.getAllAdapters();
+    if (!adapters) return;
+
+    SC.Logger.info('Local storage: Nuking all adapters.');
+
+    for (var i = 0, len = adapters.length; i < len; i++) {
+      adapters[i].nuke();
+    }
   }
 });
