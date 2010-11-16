@@ -146,7 +146,7 @@ SCUDS.DOMStorageAdapter = SCUDS.LocalStorageAdapter.extend(
 
     if (length > 10 && SC.browser.msie) {
       var startIndex = 0, that = this;
-      // FIXME: [SE] fix line below when this is ported to IE - currently 'data' in undefined
+      // TODO: [SE] fix line below when this is ported to IE - currently 'data' in undefined
       // setTimeout(function() { that._chunkSave(data, objs, startIndex, length, keys); }, 150);
     } else {
       // If the number of objects > maxBufferSize, just write directly to local storage; 
@@ -197,7 +197,7 @@ SCUDS.DOMStorageAdapter = SCUDS.LocalStorageAdapter.extend(
    */
   get: function(id) {
     // Check the buffer first.
-    if (this._buffer && SC.typeOf(this._buffer[id]) === SC.T_HASH) return this._buffer[id];
+    if (this._buffer && this._buffer[id]) return this._buffer[id];
 
     // Otherwise deserialize from local storage.
     var data = this._deserializeHash() || {};
