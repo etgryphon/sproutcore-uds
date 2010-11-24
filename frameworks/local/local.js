@@ -80,7 +80,8 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
       recordType = recordTypes[i];
       recordTypeString = SC.browser.msie ? recordType._object_className : recordType.toString();
       ds = this._getDataStoreForRecordType(recordType);
-      if (ds) handledTypes.push(recordTypeString);
+      if (!ds) continue;
+      handledTypes.push(recordTypeString);
     }
 
     if (handledTypes.length === 0) return NO;
