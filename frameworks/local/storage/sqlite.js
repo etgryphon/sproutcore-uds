@@ -310,11 +310,46 @@ SCUDS.SQLiteStorageAdaptor = SC.Object.extend({
   /**
     Removes a hash from the database
     
-    @param {String} id The id of the hash to remove
+    @param {Hash|String} hashOrId The hash or id (of the hash) to remove
+    @param {SC.Store} store The store the record is in
+    @param {String} storeKey The storeKey of the record
     @returns YES if removed, NO otherwise
   */
-  remove: function(id) {
+  remove: function(hashOrId, store, storeKey) {
+    var db = SCUDS.SQLiteStorageAdaptor.getDatabase(),
+        tableName = this.get('tableName'),
+        that = this,
+        id;
+    
+    if (typeof hashOrId === SC.T_OBJECT) {
+      id = hashOrId[this.get('primaryKey')];
+    } else {
+      id = hashOrId;
+    }
+    
+    if (db) {
+      db.transaction(function(t) {
+        t.executeSql(
+          'DELETE FROM ' + tableName + ' WHERE id = ?;',
+          [String(id)],
+          function() {
+            that._didRemove.call(that, store, storeKey, id);
+          },
+          that._errorHandler
+        );
+      }, function(error) { that._transactionErrorHandler.call(that, error, "remove"); });
+      
+      return YES;
+    }
+    
     return NO;
+  },
+  
+  _didRemove: function(store, storeKey, id) {
+    var dataSource = this.get('dataSource');
+    if (dataSource && typeof dataSource.dataStoreDidRemoveRecord === SC.T_FUNCTION) {
+      dataSource.dataStoreDidRemoveRecord(store, storeKey, id);
+    }
   },
   
   /**
