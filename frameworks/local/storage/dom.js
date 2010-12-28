@@ -231,6 +231,7 @@ SCUDS.DOMStorageAdapter = SCUDS.LocalStorageAdapter.extend(
   nuke: function() {
     window.localStorage.removeItem(this.localStorageKey);
     window.localStorage.removeItem(this._bufferKey);
+    this._buffer = {};
   },
 
   _getBufferSize: function() {
