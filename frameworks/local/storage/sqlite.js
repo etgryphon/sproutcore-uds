@@ -229,7 +229,7 @@ SCUDS.SQLiteStorageAdaptor = SC.Object.extend({
     @param {Hash|Array} hashes the hash(es) to save
     @returns YES if saved, NO otherwise
   */
-  save: function(hashes) {
+  save: function(hashes, store, id) {
     var db = SCUDS.SQLiteStorageAdaptor.getDatabase(),
         tableName = this.get('tableName'),
         primaryKey = this.get('primaryKey'),
@@ -253,7 +253,7 @@ SCUDS.SQLiteStorageAdaptor = SC.Object.extend({
               FIXME hash is actually the last hash in the list... fail
                       we can't really inline this, we should use notification
             */
-            callback.call(that, hash);
+            callback.call(that, hash, store, id);
           },
           that._errorHandler
         );
@@ -262,11 +262,15 @@ SCUDS.SQLiteStorageAdaptor = SC.Object.extend({
     
     return YES;
   },
-  
-  _didSave: function(hash) {
-    var dataSource = this.get('dataSource');
-    if (dataSource && typeof dataSource.databaseDidSaveHash === SC.T_FUNCTION) {
-      dataSource.dataStoreDidSaveHash(this.get('recordType'), hash);
+
+  _didSave: function(hash, store, id) {
+
+    var dataSource = this.get('dataSource'),
+        recordType = this.get('recordType'),
+        storeKey = store.storeKeyExists(recordType, id);
+    console.log('_didSave datasource',dataSource, 'recordType', recordType, 'id', id);
+    if (dataSource && typeof dataSource.dataStoreDidSaveHash === SC.T_FUNCTION && store && storeKey) {
+      dataSource.dataStoreDidSaveHash(hash, store, storeKey);
     }
   },
   

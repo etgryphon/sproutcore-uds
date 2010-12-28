@@ -223,7 +223,7 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
   notifyDidLoadRecord: function(store, recordType, dataHash, id) {
     var ds = this._getDataStoreForRecordType(recordType);    
     if (!ds) return;
-    ds.save(dataHash);
+    ds.save(dataHash, store, id);
     SC.Logger.log('Wrote %@:%@ to local cache.'.fmt(recordType.toString(), id));
   },
 
