@@ -245,7 +245,7 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
   notifyDidDestroyRecord: function(store, recordType, id) {
     var ds = this._getDataStoreForRecordType(recordType);    
     if (!ds) return;
-    ds.remove(id);
+    ds.remove(id,store);
     SC.Logger.log('Deleted %@:%@ from local cache.'.fmt(recordType.toString(), id));
   },
 

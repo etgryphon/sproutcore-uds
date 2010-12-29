@@ -319,7 +319,7 @@ SCUDS.SQLiteStorageAdaptor = SC.Object.extend({
     @param {String} storeKey The storeKey of the record
     @returns YES if removed, NO otherwise
   */
-  remove: function(hashOrId, store, storeKey) {
+  remove: function(hashOrId, store) {
     var db = SCUDS.SQLiteStorageAdaptor.getDatabase(),
         tableName = this.get('tableName'),
         that = this,
@@ -337,7 +337,7 @@ SCUDS.SQLiteStorageAdaptor = SC.Object.extend({
           'DELETE FROM ' + tableName + ' WHERE id = ?;',
           [String(id)],
           function() {
-            that._didRemove.call(that, store, storeKey, id);
+            that._didRemove.call(that, store,  id);
           },
           that._errorHandler
         );
@@ -349,8 +349,10 @@ SCUDS.SQLiteStorageAdaptor = SC.Object.extend({
     return NO;
   },
   
-  _didRemove: function(store, storeKey, id) {
-    var dataSource = this.get('dataSource');
+  _didRemove: function(store, id) {
+    var dataSource = this.get('dataSource'),
+        recordType = this.get('recordType'),
+        storeKey = store.storeKeyExists(recordType, id);
     if (dataSource && typeof dataSource.dataStoreDidRemoveRecord === SC.T_FUNCTION) {
       dataSource.dataStoreDidRemoveRecord(store, storeKey, id);
     }

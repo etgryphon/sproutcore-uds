@@ -143,19 +143,37 @@ SCUDS.NotifyingStore = SC.Store.extend({
     return ret;
   },
 
-  /**
-   * Overrides removeDataHash() to notify the data source on completion.
-   */
-  removeDataHash: function(storeKey, status) {
-    var ds = this._getDataSource();
+//  /**
+//   * Overrides removeDataHash() to notify the data source on completion.
+//   */
+//  removeDataHash: function(storeKey, status) {
+//    var ds = this._getDataSource();
+//
+//    if (ds.wantsNotification) {
+//      var id = this.idFor(storeKey);
+//      var recordType = this.recordTypeFor(storeKey);
+//      ds.notifyDidDestroyRecord(this, recordType, id);
+//    }
+//
+//    return sc_super();
+//  },
+  destroyRecord: function(recordType, id, storeKey, notify) {
+    recordType = recordType || this.recordTypeFor(storeKey);
+    id = id || this.idFor(storeKey);
+    var ret = sc_super();
+   // if(notify)
+    //{
+      var ds = this._getDataSource();
 
-    if (ds.wantsNotification) {
-      var id = this.idFor(storeKey);
-      var recordType = this.recordTypeFor(storeKey);
-      ds.notifyDidDestroyRecord(this, recordType, id);
-    }
-
-    return sc_super();
+      if (ds.wantsNotification) {
+       // var id = this.idFor(storeKey);
+        //var recordType = this.recordTypeFor(storeKey);
+        ds.notifyDidDestroyRecord(this, recordType, id);
+      }
+    //}
+    return ret;
   }
+
+
 });
 
