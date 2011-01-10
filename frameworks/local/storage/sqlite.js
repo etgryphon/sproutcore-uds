@@ -268,7 +268,6 @@ SCUDS.SQLiteStorageAdaptor = SC.Object.extend({
     var dataSource = this.get('dataSource'),
         recordType = this.get('recordType'),
         storeKey = store.storeKeyExists(recordType, id);
-    console.log('_didSave datasource',dataSource, 'recordType', recordType, 'id', id);
     if (dataSource && typeof dataSource.dataStoreDidSaveHash === SC.T_FUNCTION && store && storeKey) {
       dataSource.dataStoreDidSaveHash(hash, store, storeKey);
     }
