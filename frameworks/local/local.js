@@ -1,7 +1,4 @@
-/*globals  SCUDS Lawnchair*/
-sc_require('storage/dom');
-sc_require('storage/sqlite');
-sc_require('lib/Lawnchair');
+/*globals SCUDS Lawnchair */
 
 /**
  * An extension of the SC.DataSource class that acts as a proxy between the SC datastore and the
@@ -67,13 +64,13 @@ SCUDS.LocalDataSource = SC.DataSource.extend({
     if (SC.none(storageMethod)) storageMethod = 'dom';
     
     if (storageMethod === 'dom') {
-      return SCUDS.DOMStorageAdaptor.create({localStorageKey: recordTypeName + this.get('version')});
+      return SCUDS.DOMStorageAdaptor ? SCUDS.DOMStorageAdaptor.create({localStorageKey: recordTypeName + this.get('version')}) : null;
     } else if (storageMethod === 'sqlite') {
-      return SCUDS.SQLiteStorageAdaptor.create({
+      return SCUDS.SQLiteStorageAdaptor ? SCUDS.SQLiteStorageAdaptor.create({
         dataSource: this,
         recordType: recordType,
         tableName: recordTypeName + this.get('version')
-      });
+      }) : null;
       
     }
     return null;
@@ -290,6 +287,7 @@ SCUDS.LocalDataSource.getDataStore = function(storeName) {
   var storageMethod = 'dom';
 
   if (ds) return ds;
+  if (!Lawnchair) return null;
 
   ds = new Lawnchair({
     table: storeName,
