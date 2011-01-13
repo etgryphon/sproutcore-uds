@@ -16,8 +16,7 @@ config :all,
   
 # CORE FRAMEWORKS
 config :foundation, :required => []
-config :amazon, :required => [:foundation]
-config :digg, :required => [:foundation]
+config :utils, :required => [:foundation]
 config :twitter, :required => [:foundation]
 config :local, :required => [:foundation]
 
