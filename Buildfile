@@ -17,6 +17,7 @@ config :all,
 # CORE FRAMEWORKS
 config :foundation, :required => []
 config :utils, :required => [:foundation]
+config :couch_db, :required => [:foundation, :utils]
 config :twitter, :required => [:foundation]
 config :local, :required => [:foundation]
 
