@@ -246,3 +246,4 @@ SCUDS.DOMStorageAdapter = SCUDS.LocalStorageAdapter.extend(
     return size;
   }
 });
+

@@ -147,3 +147,4 @@ SCUDS.LocalStorageAdapterFactory = SC.Object.create({
     }
   }
 });
+
