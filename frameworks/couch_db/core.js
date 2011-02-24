@@ -44,8 +44,8 @@ SCUDS.CouchDBDataSource = SC.DataSource.extend({
   },
   
   _fetchRecordType: function(recordType, store, query) {
-    var s  = this.get('server'),
-        db = this.get('database') || 'data', params,
+    var s  = this.get('server'), params,
+        db = recordType.prototype.recordDatabase || this.get('database') || 'data',
         docName = recordType ? recordType.prototype.designDocument || 'data' : 'data';  
     if (SC.typeOf(recordType) !== SC.T_CLASS) {
       SC.Logger.error('SCUDS.CouchDBDataSource._fetchRecordType(): Error retrieving records from data source: Invalid record type.');
@@ -55,16 +55,19 @@ SCUDS.CouchDBDataSource = SC.DataSource.extend({
     // create params...
     params = {store: store, query: query, recordType: recordType};
     // TODO: [EG] check to see if we need to make a specific view call
-    this._allRecordsCall(db, docName, params);
+    this._fetchRecordsCall(db, docName, params);
     
     return YES;
   },
   
-  _allRecordsCall: function(database, docName, params){
-    var rt = params.recordType,
-        allRecView = rt ? rt.prototype.allView || 'all_records' : 'all_records';
+  _fetchRecordsCall: function(database, docName, params){
+    var rt = params.recordType, q = params.query, recView;
+    
+    // find the correct view
+    if(q) recView = q.view;
+    if(SC.none(recView) && rt) recView = rt.prototype.allView || 'all_records'; 
     // generate the url
-    SC.Request.getUrl('%@/_design/%@/_view/%@'.fmt(database, docName, allRecView))
+    SC.Request.getUrl('%@/_design/%@/_view/%@'.fmt(database, docName, recView))
                 .set('isJSON', YES)
                 .notify(this, this._dataFetchComplete, params)
                 .send();
@@ -91,12 +94,233 @@ SCUDS.CouchDBDataSource = SC.DataSource.extend({
         delete query.needsRefresh;
         
         store.dataSourceDidFetchQuery(query);
+        if (query.successfulCallback) query.successfulCallback();
       } 
 
     // handle error case
-    } else store.dataSourceDidErrorQuery(query, response);
+    } else {
+      store.dataSourceDidErrorQuery(query, response);
+      if (query.failureCallback) query.failureCallback(response);
+    }
   },
   
+  /**************************************************
+  *
+  * CODE FOR RETRIEVING A SINGLE RECORD
+  *
+  ***************************************************/
+  retrieveRecord: function(store, storeKey, id) {
+    // debugger;
+    // map storeKey back to record type
+    var recordType = SC.Store.recordTypeFor(storeKey),
+        db = recordType.prototype.recordDatabase || this.get('database') || 'data',
+        url, params, rev;
+        
+    // Get the id
+    id = id || store.idFor(storeKey);
+
+    // decide on the URL based on the record type
+    url = (db && id) ? '%@/%@'.fmt(db, id) : null;
+    // if no url is found, we don't know how to handle this record
+    if (!url) return NO;
+    
+    params = {store: store, storeKey: storeKey, recordType: recordType, dataType: 'Fetch'};
+
+    // we can handle it, get the URL.
+    SC.Request.getUrl(url)
+      .set('isJSON', YES)
+      .header('Accept', 'application/json, *.*')
+      .notify(this, this._wasSuccessfulRecordTransaction, params)
+      .send();
+
+    return YES;
+  },
+
+  /**************************************************
+  *
+  * CODE FOR CREATING A SINGLE RECORD
+  *
+  ***************************************************/
+  createRecord: function(store, storeKey, params) {
+    // debugger;
+    // map storeKey back to record type
+    var recordType = SC.Store.recordTypeFor(storeKey),
+        db = recordType.prototype.recordDatabase || this.get('database') || 'data',
+        url, hash, pk = recordType.prototype.primaryKey;
+        
+    // decide on the URL based on the record type
+    url = (db) ? '%@/'.fmt(db) : null;
+    hash = store.readDataHash(storeKey) || {};
+    hash._id = hash[pk];
+    // if no url is found, we don't know how to handle this record
+    if (!url) return NO;
+    
+    params = params || {};
+    params.store = store;
+    params.storeKey = storeKey;
+    params.recordType = recordType;
+    params.dataType = 'Create';
+
+    // we can handle it, get the URL.
+    SC.Request.postUrl(url, hash)
+      .set('isJSON', YES)
+      .header('Accept', 'application/json, *.*')
+      .notify(this, this._didCreateRecord, params)
+      .send();
+
+    return YES;
+  },
+  
+  /**************************************************
+  *
+  * CODE FOR UPDATING A SINGLE RECORD
+  *
+  ***************************************************/
+  updateRecord: function(store, storeKey, params) {
+    // debugger;
+    // map storeKey back to record type
+    var recordType = SC.Store.recordTypeFor(storeKey),
+        db = recordType.prototype.recordDatabase || this.get('database') || 'data',
+        url, hash, id;
+        
+    // decide on the URL based on the record type
+    id = store.idFor(storeKey);
+    url = (db) ? '%@/%@'.fmt(db, id) : null;
+    hash = store.readDataHash(storeKey);
+    hash._id = id;
+    // if no url is found, we don't know how to handle this record
+    if (!url) return NO;
+    
+    params = params || {};
+    params.store = store;
+    params.storeKey = storeKey;
+    params.recordType = recordType;
+    params.dataType = 'Update';
+
+    // we can handle it, get the URL.
+    SC.Request.putUrl(url, hash)
+      .set('isJSON', YES)
+      .header('Accept', 'application/json, *.*')
+      .notify(this, this._wasSuccessfulRecordTransaction, params)
+      .send();
+
+    return YES;
+  },
+    
+  /**************************************************
+  *
+  * CODE FOR DELETING A SINGLE RECORD
+  *
+  ***************************************************/
+  deleteRecord: function(store, storeKey, params) {
+    // debugger;
+    // map storeKey back to record type
+    var recordType = SC.Store.recordTypeFor(storeKey),
+        db = recordType.prototype.recordDatabase || this.get('database') || 'data',
+        url, hash, id;
+        
+    // decide on the URL based on the record type
+    id = store.idFor(storeKey);
+    url = (db) ? '%@/%@'.fmt(db, id) : null;
+    if (!url) return NO;
+    
+    params = params || {};
+    params.store = store;
+    params.storeKey = storeKey;
+    params.recordType = recordType;
+    params.dataType = 'Delete';
+
+    // we can handle it, get the URL.
+    SC.Request.deleteUrl(url, hash)
+      .set('isJSON', YES)
+      .header('Accept', 'application/json, *.*')
+      .notify(this, this._didDeleteRecord, params)
+      .send();
+
+    return YES;
+  },
+
+  _didDeleteRecord: function(response, params) {
+    var store = params.store,
+        storeKey = params.storeKey;
+
+    // normal: load into store...response == dataHash
+    if (SC.$ok(response)) {
+      store.dataSourceDidComplete(storeKey, response.get('body'));
+      
+    // error: indicate as such...response == error
+    } else {
+      store.dataSourceDidError(storeKey, response.get('body'));
+    }
+
+  },
+  
+  /**************************************************
+  *
+  * CALLBACKS
+  *
+  ***************************************************/
+  successfulFetch: function(storeKeys, params, code){
+    // CODE for success
+  },
+  
+  successfulCreate: function(storeKey, params, code){
+    // CODE for success
+  },
+  
+  successfulUpdate: function(storeKey, params, code){
+    // CODE for success
+  },
+  
+  successfulDelete: function(storeKey, params, code){
+    // CODE for success
+  },
+  
+  failureFetch: function(storeKeys, params, code){
+    // CODE FOR Failure
+  },
+  
+  failureCreate: function(storeKey, params, code){
+    // CODE for success
+  },
+  
+  failureUpdate: function(storeKey, params, code){
+    // CODE for success
+  },
+  
+  failureDelete: function(storeKey, params, code){
+    // CODE for success
+  },
+  
+    
+  /**************************************************
+  *
+  * UTILITY METHODS
+  *
+  ***************************************************/
+  _wasSuccessfulRecordTransaction: function(response, params) {
+    var store = params.store, rt = params.recordType,
+        storeKey = params.storeKey, hash, callback = 'defaultCallback',
+        pk = rt ? rt.prototype.primaryKey || '_id' : '_id';
+
+    // normal: load into store...response == dataHash
+
+    if (SC.$ok(response)) {
+      hash = response.get('body') || {};
+      hash[pk] = hash._id;
+      SC.Store.replaceIdFor(storeKey, hash._id);
+      store.dataSourceDidComplete(storeKey, hash);
+      callback = 'successful'+params.dataType;
+    // error: indicate as such...response == error
+    } else {
+      callback = 'failure'+params.dataType;
+      store.dataSourceDidError(storeKey, response.get('body'));
+    }
+    // Do the callback
+    if (this[callback]) this[callback](storeKey, params, response.status)
+  },
+  
+  // Parse data from the CouchDB server in a more manageable form
   _parseCouchViewResponse: function(recordType, body){
     if (SC.none(body)) return [];
     var ret = [], rows = body.rows || [],
