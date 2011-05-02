@@ -335,3 +335,4 @@ SCUDS.CouchDBDataSource = SC.DataSource.extend({
     return ret;
   }
 });
+
